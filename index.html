@@ -8,27 +8,37 @@
     <style>
         :root { --saudia-green: #006C35; --saudia-gold: #8E713E; --used-bg: #D1F2EB; --refund-bg: #FADBD8; }
         body { font-family: 'Times New Roman', serif; margin: 0; background-color: #f0f2f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        
         #login-screen { background: white; padding: 40px; border-radius: 4px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; width: 400px; border-top: 6px solid var(--saudia-green); }
-        #main-app { display: none; width: 100%; max-width: 900px; background: white; min-height: 80vh; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
+        #main-app { display: none; width: 100%; max-width: 1000px; background: white; min-height: 85vh; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; margin: 20px; }
+        
         header { background-color: var(--saudia-green); color: white; padding: 25px; text-align: center; border-bottom: 4px solid var(--saudia-gold); position: relative; }
         .user-info { position: absolute; right: 25px; top: 50%; transform: translateY(-50%); text-align: right; font-family: Arial; font-size: 0.85em; }
-        .container { padding: 40px; font-family: Arial, sans-serif; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; box-sizing: border-box; margin-bottom: 15px; border-radius: 4px; }
-        button { width: 100%; padding: 14px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; color: white; background: var(--saudia-green); border-radius: 4px; }
+        
+        .container { padding: 30px; font-family: Arial, sans-serif; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; box-sizing: border-box; margin-bottom: 10px; border-radius: 4px; }
+        
+        .btn-row { display: flex; gap: 10px; margin-top: 10px; }
+        button { flex: 1; padding: 14px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; color: white; border-radius: 4px; background: var(--saudia-green); }
+        .btn-update { background: var(--saudia-gold); display: none; } /* Hidden by default */
+        .btn-delete { background: #b22222; display: none; } /* Hidden by default */
+        
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th { background: #f4f4f4; color: var(--saudia-green); text-align: left; padding: 15px; border-bottom: 2px solid var(--saudia-gold); }
-        td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 14px; }
+        td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; }
         .row-used { background-color: var(--used-bg); }
         .row-refund { background-color: var(--refund-bg); }
-        footer { text-align: center; padding: 20px; font-size: 11px; color: #888; background: #fff; }
-        .toggle-link { color: var(--saudia-green); cursor: pointer; margin-top: 15px; display: inline-block; text-decoration: underline; font-size: 0.9em; }
+        .selected-row { outline: 3px solid var(--saudia-gold); background-color: #fef9e7 !important; }
+        
+        footer { text-align: center; padding: 15px; font-size: 11px; color: #888; }
+        .toggle-link { color: var(--saudia-green); cursor: pointer; margin-top: 15px; display: inline-block; text-decoration: underline; }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
         <h1 style="color: var(--saudia-green); margin:0;">SAUDIA</h1>
-        <p id="auth-title" style="color: var(--saudia-gold); font-weight: bold; margin-bottom:20px;">CLOUD TMS LOGIN</p>
+        <p id="auth-title" style="color: var(--saudia-gold); font-weight: bold;">CLOUD TMS LOGIN</p>
         <div id="reg-extra" style="display:none;"><input type="text" id="reg-fullname" placeholder="Full Name"></div>
         <input type="text" id="email" placeholder="Username/Email">
         <input type="password" id="password" placeholder="Password">
@@ -40,16 +50,35 @@
     <div id="main-app">
         <header>
             <h1 style="margin:0; letter-spacing: 5px;">SAUDIA</h1>
-            <div class="user-info"><span id="display-name"></span> | <span style="cursor:pointer;" onclick="location.reload()">Logout</span></div>
+            <div class="user-info">
+                <span id="display-name"></span> | 
+                <span style="cursor:pointer; text-decoration:underline;" onclick="location.reload()">Logout</span>
+            </div>
         </header>
+
         <div class="container">
             <input type="text" id="ticketNum" placeholder="13 Digit Ticket Number" maxlength="13">
-            <select id="ticketType"><option>Fresh Issued</option><option>Re-issued</option><option>Re-booked</option></select>
-            <select id="ticketStatus"><option value="Used">Used</option><option value="To be Refunded">To be Refunded</option></select>
-            <button onclick="saveTicket()">Save to Cloud</button>
-            <input type="text" id="search" placeholder="Search..." onkeyup="filterTable()" style="margin-top:20px;">
+            <div style="display:flex; gap:10px;">
+                <select id="ticketType">
+                    <option>Fresh Issued</option><option>Re-issued</option><option>Re-booked</option>
+                </select>
+                <select id="ticketStatus">
+                    <option value="Used">Used</option><option value="To be Refunded">To be Refunded</option>
+                </select>
+            </div>
+
+            <div class="btn-row">
+                <button onclick="saveTicket()">Save Ticket</button>
+                <button id="admin-upd" class="btn-update" onclick="updateTicket()">Update Selected</button>
+                <button id="admin-del" class="btn-delete" onclick="deleteTicket()">Delete Selected</button>
+            </div>
+
+            <input type="text" id="search" placeholder="Search by ticket number..." onkeyup="filterTable()" style="margin-top:20px; border-radius: 20px; padding-left: 15px;">
+            
             <table>
-                <thead><tr><th>Ticket Number</th><th>Type</th><th>Status</th><th>By Staff</th></tr></thead>
+                <thead>
+                    <tr><th>Ticket Number</th><th>Type</th><th>Status</th><th>Staff</th></tr>
+                </thead>
                 <tbody id="tableBody"></tbody>
             </table>
         </div>
@@ -57,18 +86,20 @@
     </div>
 
     <script>
-        // --- THE ONLY PLACE SUPABASE IS DECLARED ---
+        // --- 1. CONFIGURATION ---
         const SAUDIA_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
         const SAUDIA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
         
-        // Using 'saudiaClient' instead of 'supabase'
+        // Use the 'Genius' variable name to avoid cache errors
         const saudiaClient = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY);
 
         let activeUser = null;
         let activeProfile = null;
         let ticketsList = [];
+        let selectedTicketId = null;
         let isRegMode = false;
 
+        // --- 2. AUTH FUNCTIONS ---
         function toggleAuthMode() {
             isRegMode = !isRegMode;
             document.getElementById('reg-extra').style.display = isRegMode ? 'block' : 'none';
@@ -86,7 +117,7 @@
                 const { data, error } = await saudiaClient.auth.signUp({ email, password });
                 if (error) return alert(error.message);
                 await saudiaClient.from('profiles').insert([{ id: data.user.id, full_name: name, role: 'user' }]);
-                alert("Check email!"); toggleAuthMode();
+                alert("Account created! You can now log in."); toggleAuthMode();
             } else {
                 const { data, error } = await saudiaClient.auth.signInWithPassword({ email, password });
                 if (error) return alert(error.message);
@@ -97,27 +128,25 @@
 
         async function loadApp() {
             const { data, error } = await saudiaClient.from('profiles').select('*').eq('id', activeUser.id).single();
-            // THE DEBUGGER
-            console.log("Database Data:", data);
-            console.log("Database Error:", error);
             if (error) {
-        console.error("Profile Error:", error);
-        return alert("Could not load profile. Check RLS policies.");
-    }
+                console.error("Profile fetch error:", error);
+                return alert("Profile not found. Did you add your row to the profiles table?");
+            }
 
             activeProfile = data;
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             document.getElementById('display-name').innerText = activeProfile.full_name;
 
-            // THE ADMIN CHECK: This makes the buttons appear
-    if (activeProfile.role === 'admin') {
-        document.getElementById('admin-upd').style.display = 'block';
-        document.getElementById('admin-del').style.display = 'block';
-    }
+            // ADMIN CHECK: Show buttons only if role is admin
+            if (activeProfile.role === 'admin') {
+                document.getElementById('admin-upd').style.display = 'block';
+                document.getElementById('admin-del').style.display = 'block';
+            }
             getTickets();
         }
 
+        // --- 3. TICKET FUNCTIONS ---
         async function getTickets() {
             const { data } = await saudiaClient.from('tickets').select('*').order('created_at', { ascending: false });
             ticketsList = data || [];
@@ -137,27 +166,23 @@
             getTickets();
         }
 
-            async function updateTicket() {
-    // You'll need a variable to track which ticket was clicked
-    if (!selectedTicketId) return alert("Please click a ticket in the table first.");
-    
-    await saudiaClient.from('tickets').update({
-        type: document.getElementById('ticketType').value,
-        status: document.getElementById('ticketStatus').value
-    }).eq('id', selectedTicketId);
-    
-    alert("Ticket Updated!");
-    getTickets();
-}
+        async function updateTicket() {
+            if (!selectedTicketId) return alert("Click a row in the table first!");
+            await saudiaClient.from('tickets').update({
+                type: document.getElementById('ticketType').value,
+                status: document.getElementById('ticketStatus').value
+            }).eq('id', selectedTicketId);
+            selectedTicketId = null;
+            getTickets();
+        }
 
-async function deleteTicket() {
-    if (!selectedTicketId) return alert("Select a ticket first.");
-    if (!confirm("Are you sure you want to delete this?")) return;
-
-    await saudiaClient.from('tickets').delete().eq('id', selectedTicketId);
-    alert("Ticket Deleted.");
-    getTickets();
-}
+        async function deleteTicket() {
+            if (!selectedTicketId) return alert("Select a ticket first!");
+            if (!confirm("Delete this ticket permanently?")) return;
+            await saudiaClient.from('tickets').delete().eq('id', selectedTicketId);
+            selectedTicketId = null;
+            getTickets();
+        }
 
         function renderTable(data) {
             const body = document.getElementById('tableBody');
@@ -165,6 +190,16 @@ async function deleteTicket() {
             data.forEach(t => {
                 const row = body.insertRow();
                 row.className = t.status === 'Used' ? 'row-used' : 'row-refund';
+                if (selectedTicketId === t.id) row.classList.add('selected-row');
+                
+                row.onclick = () => {
+                    selectedTicketId = t.id;
+                    document.getElementById('ticketNum').value = t.ticket_num;
+                    document.getElementById('ticketType').value = t.type;
+                    document.getElementById('ticketStatus').value = t.status;
+                    renderTable(data); // Refresh highlight
+                };
+                
                 row.innerHTML = `<td>${t.ticket_num}</td><td>${t.type}</td><td>${t.status}</td><td>${t.processed_by}</td>`;
             });
         }
