@@ -96,15 +96,25 @@
         }
 
         async function loadApp() {
-            const { data } = await saudiaClient.from('profiles').select('*').eq('id', activeUser.id).single();
+            const { data, error } = await saudiaClient.from('profiles').select('*').eq('id', activeUser.id).single();
             // THE DEBUGGER
             console.log("Database Data:", data);
             console.log("Database Error:", error);
+            if (error) {
+        console.error("Profile Error:", error);
+        return alert("Could not load profile. Check RLS policies.");
+    }
 
             activeProfile = data;
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             document.getElementById('display-name').innerText = activeProfile.full_name;
+
+            // THE ADMIN CHECK: This makes the buttons appear
+    if (activeProfile.role === 'admin') {
+        document.getElementById('admin-upd').style.display = 'block';
+        document.getElementById('admin-del').style.display = 'block';
+    }
             getTickets();
         }
 
@@ -126,6 +136,28 @@
             document.getElementById('ticketNum').value = '';
             getTickets();
         }
+
+            async function updateTicket() {
+    // You'll need a variable to track which ticket was clicked
+    if (!selectedTicketId) return alert("Please click a ticket in the table first.");
+    
+    await saudiaClient.from('tickets').update({
+        type: document.getElementById('ticketType').value,
+        status: document.getElementById('ticketStatus').value
+    }).eq('id', selectedTicketId);
+    
+    alert("Ticket Updated!");
+    getTickets();
+}
+
+async function deleteTicket() {
+    if (!selectedTicketId) return alert("Select a ticket first.");
+    if (!confirm("Are you sure you want to delete this?")) return;
+
+    await saudiaClient.from('tickets').delete().eq('id', selectedTicketId);
+    alert("Ticket Deleted.");
+    getTickets();
+}
 
         function renderTable(data) {
             const body = document.getElementById('tableBody');
