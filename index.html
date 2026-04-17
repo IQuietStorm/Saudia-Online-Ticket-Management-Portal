@@ -6,103 +6,67 @@
     <title>Saudia Airlines - Cloud TMS</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --saudia-green: #006C35;
-            --saudia-gold: #8E713E;
-            --used-bg: #D1F2EB;
-            --refund-bg: #FADBD8;
-            --admin-red: #b22222;
-        }
-
+        :root { --saudia-green: #006C35; --saudia-gold: #8E713E; --used-bg: #D1F2EB; --refund-bg: #FADBD8; }
         body { font-family: 'Times New Roman', serif; margin: 0; background-color: #f0f2f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        
-        #login-screen, #settings-screen { background: white; padding: 40px; border-radius: 4px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; width: 400px; border-top: 6px solid var(--saudia-green); }
-        #main-app, #settings-screen { display: none; }
-
+        #login-screen { background: white; padding: 40px; border-radius: 4px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; width: 400px; border-top: 6px solid var(--saudia-green); }
+        #main-app { display: none; width: 100%; max-width: 900px; background: white; min-height: 80vh; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
         header { background-color: var(--saudia-green); color: white; padding: 25px; text-align: center; border-bottom: 4px solid var(--saudia-gold); position: relative; }
         .user-info { position: absolute; right: 25px; top: 50%; transform: translateY(-50%); text-align: right; font-family: Arial; font-size: 0.85em; }
-        
         .container { padding: 40px; font-family: Arial, sans-serif; }
-        .form-group { margin-bottom: 15px; text-align: left; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; box-sizing: border-box; }
-
-        .btn-row { display: flex; gap: 10px; margin-top: 20px; }
-        button { flex: 1; padding: 14px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; color: white; transition: 0.3s; }
-        button:hover { opacity: 0.8; }
-        .btn-save { background: var(--saudia-green); }
-        .btn-export { background: #444; }
-        .btn-update { background: var(--saudia-gold); display: none; }
-        .btn-delete { background: var(--admin-red); display: none; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; box-sizing: border-box; margin-bottom: 15px; border-radius: 4px; }
+        button { width: 100%; padding: 14px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; color: white; background: var(--saudia-green); border-radius: 4px; }
+        button:hover { opacity: 0.9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th { background: #f4f4f4; color: var(--saudia-green); text-align: left; padding: 15px; border-bottom: 2px solid var(--saudia-gold); }
-        td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 14px; cursor: pointer; }
+        td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 14px; }
         .row-used { background-color: var(--used-bg); }
         .row-refund { background-color: var(--refund-bg); }
-        .selected-row { outline: 3px solid var(--saudia-green); background-color: #e8f5e9 !important; }
-        
-        footer { text-align: center; padding: 15px; font-size: 11px; color: #888; }
-        .toggle-link { color: var(--saudia-green); cursor: pointer; margin-top: 15px; display: inline-block; text-decoration: underline; }
+        footer { text-align: center; padding: 20px; font-size: 11px; color: #888; background: #fff; }
+        .toggle-link { color: var(--saudia-green); cursor: pointer; margin-top: 15px; display: inline-block; text-decoration: underline; font-size: 0.9em; }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
-        <h1 style="color: var(--saudia-green); margin:0;">SAUDIA</h1>
-        <p id="auth-title" style="color: var(--saudia-gold); font-weight: bold;">CLOUD TMS LOGIN</p>
+        <h1 style="color: var(--saudia-green); margin:0; letter-spacing:2px;">SAUDIA</h1>
+        <p id="auth-title" style="color: var(--saudia-gold); font-weight: bold; margin-bottom:20px;">CLOUD TMS LOGIN</p>
         
         <div id="reg-extra" style="display:none;">
-            <input type="text" id="reg-fullname" placeholder="Full Name" style="margin-bottom:10px;">
+            <input type="text" id="reg-fullname" placeholder="Full Name">
         </div>
-        <input type="text" id="email" placeholder="Username/Email" style="margin-bottom:10px;">
-        <input type="password" id="password" placeholder="Password" style="margin-bottom:15px;">
-
-        <button class="btn-save" style="width:100%" onclick="handleAuth()" id="auth-btn">Sign In</button>
+        <input type="text" id="email" placeholder="Username or Email">
+        <input type="password" id="password" placeholder="Password">
+        
+        <button onclick="handleAuth()" id="auth-btn">Sign In</button>
         <br>
         <span class="toggle-link" onclick="toggleAuthMode()" id="auth-toggle">New User? Create Account</span>
-    </div>
-
-    <div id="settings-screen">
-        <h3>Update Security</h3>
-        <input type="password" id="new-password" placeholder="New Password" style="margin-bottom:15px;">
-        <div class="btn-row">
-            <button class="btn-save" onclick="updatePassword()">Save</button>
-            <button class="btn-export" onclick="closeSettings()">Cancel</button>
-        </div>
     </div>
 
     <div id="main-app">
         <header>
             <h1 style="margin:0; letter-spacing: 5px;">SAUDIA</h1>
             <div class="user-info">
-                <span id="display-name"></span><br>
-                <span style="cursor:pointer; text-decoration:underline;" onclick="openSettings()">Settings</span> | 
-                <span style="cursor:pointer; text-decoration:underline;" onclick="logout()">Logout</span>
+                <span id="display-name"></span> | 
+                <span style="cursor:pointer; text-decoration:underline;" onclick="location.reload()">Logout</span>
             </div>
         </header>
 
         <div class="container">
-            <div class="form-group">
-                <label>Ticket Number (13 Digits)</label>
-                <input type="text" id="ticketNum" maxlength="13">
-            </div>
-            <div style="display:flex; gap:15px;">
-                <select id="ticketType">
-                    <option>Fresh Issued</option><option>Re-issued</option><option>Re-booked</option>
-                </select>
-                <select id="ticketStatus">
-                    <option value="Used">Used</option><option value="To be Refunded">To be Refunded</option>
-                </select>
-            </div>
-
-            <div class="btn-row">
-                <button class="btn-save" onclick="saveTicket()">Save to Cloud</button>
-                <button class="btn-export" onclick="exportCSV()">Export CSV</button>
-                <button id="admin-upd" class="btn-update" onclick="updateTicket()">Update</button>
-                <button id="admin-del" class="btn-delete" onclick="deleteTicket()">Delete</button>
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
+                <label style="font-size: 0.8em; font-weight: bold; color: #666;">TICKET DETAILS</label>
+                <input type="text" id="ticketNum" placeholder="13 Digit Ticket Number" maxlength="13" style="margin-top:5px;">
+                <div style="display:flex; gap:10px;">
+                    <select id="ticketType">
+                        <option>Fresh Issued</option><option>Re-issued</option><option>Re-booked</option>
+                    </select>
+                    <select id="ticketStatus">
+                        <option value="Used">Used</option><option value="To be Refunded">To be Refunded</option>
+                    </select>
+                </div>
+                <button onclick="saveTicket()">Save to Cloud Database</button>
             </div>
 
-            <input type="text" id="search" placeholder="Search live database..." onkeyup="filterTable()" style="margin-top:20px;">
+            <input type="text" id="search" placeholder="Live Search..." onkeyup="filterTable()" style="margin-top:25px; border-radius: 20px; padding-left: 20px;">
             
             <table>
                 <thead>
@@ -111,118 +75,105 @@
                 <tbody id="tableBody"></tbody>
             </table>
         </div>
-        <footer>PROPERTY OF SAUDIA AIRLINES © 2026</footer>
+        <footer>PROPERTY OF SAUDIA AIRLINES &copy; 2026</footer>
     </div>
 
     <script>
-    // 1. CONFIGURATION - ONLY ONCE
-    const SB_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
-    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
-    
-    // We name it 'supabase' here. DO NOT use 'const supabase' anywhere else.
-    const supabase = window.supabase.createClient(SB_URL, SB_KEY);
-
-    // 2. APP STATE
-    let authUser = null;
-    let myProfile = null;
-    let allTickets = [];
-    let activeTicketId = null;
-    let isRegistering = false;
-
-    // 3. AUTH FUNCTIONS
-    function toggleAuthMode() {
-        isRegistering = !isRegistering;
-        document.getElementById('reg-extra').style.display = isRegistering ? 'block' : 'none';
-        document.getElementById('auth-btn').innerText = isRegistering ? 'Register' : 'Sign In';
-        document.getElementById('auth-toggle').innerText = isRegistering ? 'Back to Login' : 'New User? Create Account';
-        document.getElementById('auth-title').innerText = isRegistering ? 'CREATE ACCOUNT' : 'CLOUD TMS LOGIN';
-    }
-
-    async function handleAuth() {
-        const emailInput = document.getElementById('email').value.trim();
-        if (!emailInput) return alert("Please enter email.");
+        // --- CONFIGURATION ---
+        const SB_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
         
-        const email = emailInput.includes('@') ? emailInput : emailInput + "@saudia-tms.com";
-        const password = document.getElementById('password').value;
+        // This is the ONLY time 'supabase' is declared in the whole file
+        const supabase = window.supabase.createClient(SB_URL, SB_KEY);
 
-        if (isRegistering) {
-            const fullName = document.getElementById('reg-fullname').value;
-            const { data, error } = await supabase.auth.signUp({ email, password });
-            if (error) return alert(error.message);
-            
-            await supabase.from('profiles').insert([{ id: data.user.id, full_name: fullName, role: 'user' }]);
-            alert("Check email for verification!");
-            toggleAuthMode();
-        } else {
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) return alert(error.message);
-            authUser = data.user;
-            launchSystem();
+        // State
+        let activeUser = null;
+        let activeProfile = null;
+        let globalTickets = [];
+        let isRegistration = false;
+
+        // --- FUNCTIONS ---
+        function toggleAuthMode() {
+            isRegistration = !isRegistration;
+            document.getElementById('reg-extra').style.display = isRegistration ? 'block' : 'none';
+            document.getElementById('auth-btn').innerText = isRegistration ? 'Register' : 'Sign In';
+            document.getElementById('auth-toggle').innerText = isRegistration ? 'Back to Login' : 'New User? Create Account';
+            document.getElementById('auth-title').innerText = isRegistration ? 'CREATE ACCOUNT' : 'CLOUD TMS LOGIN';
         }
-    }
 
-    async function launchSystem() {
-        const { data } = await supabase.from('profiles').select('*').eq('id', authUser.id).single();
-        myProfile = data;
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('main-app').style.display = 'block';
-        document.getElementById('display-name').innerText = myProfile.full_name;
-
-        if (myProfile.role === 'admin') {
-            document.getElementById('admin-upd').style.display = 'block';
-            document.getElementById('admin-del').style.display = 'block';
-        }
-        refreshData();
-    }
-
-    // 4. DATA FUNCTIONS
-    async function refreshData() {
-        const { data } = await supabase.from('tickets').select('*').order('created_at', { ascending: false });
-        allTickets = data || [];
-        drawTable(allTickets);
-    }
-
-    async function saveTicket() {
-        const num = document.getElementById('ticketNum').value.trim();
-        if (num.length !== 13) return alert("13 digits required.");
-
-        const { error } = await supabase.from('tickets').insert([{
-            ticket_num: num,
-            type: document.getElementById('ticketType').value,
-            status: document.getElementById('ticketStatus').value,
-            processed_by: myProfile.full_name
-        }]);
-
-        if (error) alert(error.message);
-        else { document.getElementById('ticketNum').value = ''; refreshData(); }
-    }
-
-    function drawTable(data) {
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
-        data.forEach(t => {
-            const row = tbody.insertRow();
-            row.className = t.status === 'Used' ? 'row-used' : 'row-refund';
-            if (activeTicketId === t.id) row.classList.add('selected-row');
+        async function handleAuth() {
+            const rawEmail = document.getElementById('email').value.trim();
+            if (!rawEmail) return alert("Please enter credentials.");
             
-            row.onclick = () => {
-                activeTicketId = t.id;
-                drawTable(data); 
-                if(myProfile && myProfile.role === 'admin') {
-                    document.getElementById('ticketNum').value = t.ticket_num;
-                    document.getElementById('ticketType').value = t.type;
-                    document.getElementById('ticketStatus').value = t.status;
-                }
-            };
-            row.innerHTML = `<td>${t.ticket_num}</td><td>${t.type}</td><td>${t.status}</td><td>${t.processed_by}</td>`;
-        });
-    }
+            const email = rawEmail.includes('@') ? rawEmail : rawEmail + "@saudia-tms.com";
+            const password = document.getElementById('password').value;
 
-    function filterTable() {
-        const q = document.getElementById('search').value.toLowerCase();
-        drawTable(allTickets.filter(t => t.ticket_num.includes(q)));
-    }
+            if (isRegistration) {
+                const fullName = document.getElementById('reg-fullname').value;
+                if (!fullName) return alert("Full Name required.");
 
-    function logout() { location.reload(); }
-</script></body>
+                const { data, error } = await supabase.auth.signUp({ email, password });
+                if (error) return alert(error.message);
+                
+                await supabase.from('profiles').insert([{ id: data.user.id, full_name: fullName, role: 'user' }]);
+                alert("Registration successful! Check email for verification.");
+                toggleAuthMode();
+            } else {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) return alert(error.message);
+                activeUser = data.user;
+                setupApp();
+            }
+        }
+
+        async function setupApp() {
+            const { data } = await supabase.from('profiles').select('*').eq('id', activeUser.id).single();
+            activeProfile = data;
+            
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            document.getElementById('display-name').innerText = activeProfile.full_name;
+            loadTickets();
+        }
+
+        async function loadTickets() {
+            const { data } = await supabase.from('tickets').select('*').order('created_at', { ascending: false });
+            globalTickets = data || [];
+            drawTable(globalTickets);
+        }
+
+        async function saveTicket() {
+            const tNum = document.getElementById('ticketNum').value.trim();
+            if (tNum.length !== 13) return alert("13 digits required.");
+
+            const { error } = await supabase.from('tickets').insert([{
+                ticket_num: tNum,
+                type: document.getElementById('ticketType').value,
+                status: document.getElementById('ticketStatus').value,
+                processed_by: activeProfile.full_name
+            }]);
+
+            if (error) alert(error.message);
+            else {
+                document.getElementById('ticketNum').value = '';
+                loadTickets();
+            }
+        }
+
+        function drawTable(records) {
+            const body = document.getElementById('tableBody');
+            body.innerHTML = '';
+            records.forEach(r => {
+                const row = body.insertRow();
+                row.className = r.status === 'Used' ? 'row-used' : 'row-refund';
+                row.innerHTML = `<td><b>${r.ticket_num}</b></td><td>${r.type}</td><td>${r.status}</td><td>${r.processed_by}</td>`;
+            });
+        }
+
+        function filterTable() {
+            const term = document.getElementById('search').value.toLowerCase();
+            drawTable(globalTickets.filter(x => x.ticket_num.includes(term)));
+        }
+    </script>
+</body>
 </html>
