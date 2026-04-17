@@ -115,168 +115,114 @@
     </div>
 
     <script>
-        // 1. CONFIGURATION
-        const SUPABASE_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
+    // 1. CONFIGURATION - ONLY ONCE
+    const SB_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
+    
+    // We name it 'supabase' here. DO NOT use 'const supabase' anywhere else.
+    const supabase = window.supabase.createClient(SB_URL, SB_KEY);
+
+    // 2. APP STATE
+    let authUser = null;
+    let myProfile = null;
+    let allTickets = [];
+    let activeTicketId = null;
+    let isRegistering = false;
+
+    // 3. AUTH FUNCTIONS
+    function toggleAuthMode() {
+        isRegistering = !isRegistering;
+        document.getElementById('reg-extra').style.display = isRegistering ? 'block' : 'none';
+        document.getElementById('auth-btn').innerText = isRegistering ? 'Register' : 'Sign In';
+        document.getElementById('auth-toggle').innerText = isRegistering ? 'Back to Login' : 'New User? Create Account';
+        document.getElementById('auth-title').innerText = isRegistering ? 'CREATE ACCOUNT' : 'CLOUD TMS LOGIN';
+    }
+
+    async function handleAuth() {
+        const emailInput = document.getElementById('email').value.trim();
+        if (!emailInput) return alert("Please enter email.");
         
-        // Initialize once
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const email = emailInput.includes('@') ? emailInput : emailInput + "@saudia-tms.com";
+        const password = document.getElementById('password').value;
 
-        // State Variables
-        let currentUser = null;
-        let userProfile = null;
-        let ticketsList = [];
-        let selectedTicketId = null;
-        let isRegisterMode = false;
-
-        // 2. FUNCTIONS (Defined early so HTML can see them)
-        function toggleAuthMode() {
-            isRegisterMode = !isRegisterMode;
-            document.getElementById('reg-extra').style.display = isRegisterMode ? 'block' : 'none';
-            document.getElementById('auth-btn').innerText = isRegisterMode ? 'Register' : 'Sign In';
-            document.getElementById('auth-toggle').innerText = isRegisterMode ? 'Back to Login' : 'New User? Create Account';
-            document.getElementById('auth-title').innerText = isRegisterMode ? 'CREATE ACCOUNT' : 'CLOUD TMS LOGIN';
-        }
-
-        async function handleAuth() {
-            const emailInput = document.getElementById('email').value.trim();
-            if (!emailInput) return alert("Please enter a username or email.");
+        if (isRegistering) {
+            const fullName = document.getElementById('reg-fullname').value;
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            if (error) return alert(error.message);
             
-            const email = emailInput.includes('@') ? emailInput : emailInput + "@saudia-tms.com";
-            const password = document.getElementById('password').value;
-
-            if (isRegisterMode) {
-                const fullName = document.getElementById('reg-fullname').value;
-                if (!fullName) return alert("Please enter your full name.");
-
-                const { data, error } = await supabase.auth.signUp({ email, password });
-                if (error) return alert(error.message);
-                
-                await supabase.from('profiles').insert([{ id: data.user.id, full_name: fullName, role: 'user' }]);
-                alert("Account created! Check your email for verification before signing in.");
-                toggleAuthMode();
-            } else {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) return alert("Login Error: " + error.message);
-                currentUser = data.user;
-                loadApp();
-            }
+            await supabase.from('profiles').insert([{ id: data.user.id, full_name: fullName, role: 'user' }]);
+            alert("Check email for verification!");
+            toggleAuthMode();
+        } else {
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) return alert(error.message);
+            authUser = data.user;
+            launchSystem();
         }
+    }
 
-        async function loadApp() {
-            const { data, error } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
-            if (error) return alert("Profile load error: " + error.message);
+    async function launchSystem() {
+        const { data } = await supabase.from('profiles').select('*').eq('id', authUser.id).single();
+        myProfile = data;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+        document.getElementById('display-name').innerText = myProfile.full_name;
+
+        if (myProfile.role === 'admin') {
+            document.getElementById('admin-upd').style.display = 'block';
+            document.getElementById('admin-del').style.display = 'block';
+        }
+        refreshData();
+    }
+
+    // 4. DATA FUNCTIONS
+    async function refreshData() {
+        const { data } = await supabase.from('tickets').select('*').order('created_at', { ascending: false });
+        allTickets = data || [];
+        drawTable(allTickets);
+    }
+
+    async function saveTicket() {
+        const num = document.getElementById('ticketNum').value.trim();
+        if (num.length !== 13) return alert("13 digits required.");
+
+        const { error } = await supabase.from('tickets').insert([{
+            ticket_num: num,
+            type: document.getElementById('ticketType').value,
+            status: document.getElementById('ticketStatus').value,
+            processed_by: myProfile.full_name
+        }]);
+
+        if (error) alert(error.message);
+        else { document.getElementById('ticketNum').value = ''; refreshData(); }
+    }
+
+    function drawTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        data.forEach(t => {
+            const row = tbody.insertRow();
+            row.className = t.status === 'Used' ? 'row-used' : 'row-refund';
+            if (activeTicketId === t.id) row.classList.add('selected-row');
             
-            userProfile = data;
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
-            document.getElementById('display-name').innerText = userProfile.full_name;
+            row.onclick = () => {
+                activeTicketId = t.id;
+                drawTable(data); 
+                if(myProfile && myProfile.role === 'admin') {
+                    document.getElementById('ticketNum').value = t.ticket_num;
+                    document.getElementById('ticketType').value = t.type;
+                    document.getElementById('ticketStatus').value = t.status;
+                }
+            };
+            row.innerHTML = `<td>${t.ticket_num}</td><td>${t.type}</td><td>${t.status}</td><td>${t.processed_by}</td>`;
+        });
+    }
 
-            if (userProfile.role === 'admin') {
-                document.getElementById('admin-upd').style.display = 'block';
-                document.getElementById('admin-del').style.display = 'block';
-            }
-            fetchTickets();
-        }
+    function filterTable() {
+        const q = document.getElementById('search').value.toLowerCase();
+        drawTable(allTickets.filter(t => t.ticket_num.includes(q)));
+    }
 
-        async function fetchTickets() {
-            const { data, error } = await supabase.from('tickets').select('*').order('created_at', { ascending: false });
-            if (error) console.error(error);
-            ticketsList = data || [];
-            renderTable(ticketsList);
-        }
-
-        async function saveTicket() {
-            const num = document.getElementById('ticketNum').value.trim();
-            if (num.length !== 13) return alert("13 digits required.");
-
-            const { error } = await supabase.from('tickets').insert([{
-                ticket_num: num,
-                type: document.getElementById('ticketType').value,
-                status: document.getElementById('ticketStatus').value,
-                processed_by: userProfile.full_name
-            }]);
-
-            if (error) alert("Error: " + error.message);
-            else { 
-                document.getElementById('ticketNum').value = ''; 
-                fetchTickets(); 
-            }
-        }
-
-        async function updateTicket() {
-            if (!selectedTicketId) return alert("Select a ticket first.");
-            const { error } = await supabase.from('tickets').update({
-                type: document.getElementById('ticketType').value,
-                status: document.getElementById('ticketStatus').value
-            }).eq('id', selectedTicketId);
-            
-            if (error) alert(error.message);
-            else { alert("Ticket Updated"); fetchTickets(); }
-        }
-
-        async function deleteTicket() {
-            if (!selectedTicketId || !confirm("Delete permanently?")) return;
-            const { error } = await supabase.from('tickets').delete().eq('id', selectedTicketId);
-            if (error) alert(error.message);
-            else { selectedTicketId = null; fetchTickets(); }
-        }
-
-        function renderTable(data) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-            data.forEach(t => {
-                const row = tbody.insertRow();
-                row.className = t.status === 'Used' ? 'row-used' : 'row-refund';
-                if (selectedTicketId === t.id) row.classList.add('selected-row');
-                
-                row.onclick = () => {
-                    selectedTicketId = t.id;
-                    renderTable(data); 
-                    if(userProfile && userProfile.role === 'admin') {
-                        document.getElementById('ticketNum').value = t.ticket_num;
-                        document.getElementById('ticketType').value = t.type;
-                        document.getElementById('ticketStatus').value = t.status;
-                    }
-                };
-                row.innerHTML = `<td>${t.ticket_num}</td><td>${t.type}</td><td>${t.status}</td><td>${t.processed_by}</td>`;
-            });
-        }
-
-        function filterTable() {
-            const q = document.getElementById('search').value.toLowerCase();
-            renderTable(ticketsList.filter(t => t.ticket_num.includes(q)));
-        }
-
-        async function updatePassword() {
-            const p = document.getElementById('new-password').value;
-            if (p.length < 6) return alert("Min 6 characters.");
-            const { error } = await supabase.auth.updateUser({ password: p });
-            if (error) alert(error.message); 
-            else { alert("Saved!"); closeSettings(); }
-        }
-
-        function openSettings() { 
-            document.getElementById('main-app').style.display='none'; 
-            document.getElementById('settings-screen').style.display='block'; 
-        }
-        
-        function closeSettings() { 
-            document.getElementById('settings-screen').style.display='none'; 
-            document.getElementById('main-app').style.display='block'; 
-        }
-
-        function logout() { location.reload(); }
-
-        function exportCSV() {
-            if (ticketsList.length === 0) return alert("No data.");
-            let csv = "Ticket,Type,Status,Staff\n" + ticketsList.map(t => `${t.ticket_num},${t.type},${t.status},${t.processed_by}`).join("\n");
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'Saudia_TMS_Report.csv';
-            a.click();
-        }
-    </script>
-</body>
+    function logout() { location.reload(); }
+</script></body>
 </html>
