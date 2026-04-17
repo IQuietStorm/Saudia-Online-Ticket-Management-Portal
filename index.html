@@ -57,17 +57,17 @@
         <input type="text" id="email" placeholder="Username/Email" style="margin-bottom:10px;">
         <input type="password" id="password" placeholder="Password" style="margin-bottom:15px;">
 
-        <button class="btn-save" style="width:100%" onclick="window.handleAuth()" id="auth-btn">Sign In</button>
+        <button class="btn-save" style="width:100%" onclick="handleAuth()" id="auth-btn">Sign In</button>
         <br>
-        <span class="toggle-link" onclick="window.toggleAuthMode()" id="auth-toggle">New User? Create Account</span>
+        <span class="toggle-link" onclick="toggleAuthMode()" id="auth-toggle">New User? Create Account</span>
     </div>
 
     <div id="settings-screen">
         <h3>Update Security</h3>
         <input type="password" id="new-password" placeholder="New Password" style="margin-bottom:15px;">
         <div class="btn-row">
-            <button class="btn-save" onclick="window.updatePassword()">Save</button>
-            <button class="btn-export" onclick="window.closeSettings()">Cancel</button>
+            <button class="btn-save" onclick="updatePassword()">Save</button>
+            <button class="btn-export" onclick="closeSettings()">Cancel</button>
         </div>
     </div>
 
@@ -76,8 +76,8 @@
             <h1 style="margin:0; letter-spacing: 5px;">SAUDIA</h1>
             <div class="user-info">
                 <span id="display-name"></span><br>
-                <span style="cursor:pointer; text-decoration:underline;" onclick="window.openSettings()">Settings</span> | 
-                <span style="cursor:pointer; text-decoration:underline;" onclick="window.logout()">Logout</span>
+                <span style="cursor:pointer; text-decoration:underline;" onclick="openSettings()">Settings</span> | 
+                <span style="cursor:pointer; text-decoration:underline;" onclick="logout()">Logout</span>
             </div>
         </header>
 
@@ -96,13 +96,13 @@
             </div>
 
             <div class="btn-row">
-                <button class="btn-save" onclick="window.saveTicket()">Save to Cloud</button>
-                <button class="btn-export" onclick="window.exportCSV()">Export CSV</button>
-                <button id="admin-upd" class="btn-update" onclick="window.updateTicket()">Update</button>
-                <button id="admin-del" class="btn-delete" onclick="window.deleteTicket()">Delete</button>
+                <button class="btn-save" onclick="saveTicket()">Save to Cloud</button>
+                <button class="btn-export" onclick="exportCSV()">Export CSV</button>
+                <button id="admin-upd" class="btn-update" onclick="updateTicket()">Update</button>
+                <button id="admin-del" class="btn-delete" onclick="deleteTicket()">Delete</button>
             </div>
 
-            <input type="text" id="search" placeholder="Search live database..." onkeyup="window.filterTable()" style="margin-top:20px;">
+            <input type="text" id="search" placeholder="Search live database..." onkeyup="filterTable()" style="margin-top:20px;">
             
             <table>
                 <thead>
@@ -115,30 +115,30 @@
     </div>
 
     <script>
-        // --- 1. CONFIGURATION ---
+        // 1. CONFIGURATION
         const SUPABASE_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
         
-        // --- INITIALIZE ONCE ---
+        // Initialize once
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // State Variables
         let currentUser = null;
         let userProfile = null;
-        let ticketsList = []; // Renamed slightly to avoid confusion
+        let ticketsList = [];
         let selectedTicketId = null;
         let isRegisterMode = false;
 
-        // --- 2. AUTHENTICATION ---
-        window.toggleAuthMode = function() {
+        // 2. FUNCTIONS (Defined early so HTML can see them)
+        function toggleAuthMode() {
             isRegisterMode = !isRegisterMode;
             document.getElementById('reg-extra').style.display = isRegisterMode ? 'block' : 'none';
             document.getElementById('auth-btn').innerText = isRegisterMode ? 'Register' : 'Sign In';
             document.getElementById('auth-toggle').innerText = isRegisterMode ? 'Back to Login' : 'New User? Create Account';
             document.getElementById('auth-title').innerText = isRegisterMode ? 'CREATE ACCOUNT' : 'CLOUD TMS LOGIN';
-        };
+        }
 
-        window.handleAuth = async function() {
+        async function handleAuth() {
             const emailInput = document.getElementById('email').value.trim();
             if (!emailInput) return alert("Please enter a username or email.");
             
@@ -152,17 +152,16 @@
                 const { data, error } = await supabase.auth.signUp({ email, password });
                 if (error) return alert(error.message);
                 
-                // Insert into Profiles table
                 await supabase.from('profiles').insert([{ id: data.user.id, full_name: fullName, role: 'user' }]);
                 alert("Account created! Check your email for verification before signing in.");
-                window.toggleAuthMode();
+                toggleAuthMode();
             } else {
                 const { data, error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) return alert("Login Error: " + error.message);
                 currentUser = data.user;
                 loadApp();
             }
-        };
+        }
 
         async function loadApp() {
             const { data, error } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
@@ -177,18 +176,17 @@
                 document.getElementById('admin-upd').style.display = 'block';
                 document.getElementById('admin-del').style.display = 'block';
             }
-            window.fetchTickets();
+            fetchTickets();
         }
 
-        // --- 3. TICKET LOGIC ---
-        window.fetchTickets = async function() {
+        async function fetchTickets() {
             const { data, error } = await supabase.from('tickets').select('*').order('created_at', { ascending: false });
             if (error) console.error(error);
             ticketsList = data || [];
-            window.renderTable(ticketsList);
-        };
+            renderTable(ticketsList);
+        }
 
-        window.saveTicket = async function() {
+        async function saveTicket() {
             const num = document.getElementById('ticketNum').value.trim();
             if (num.length !== 13) return alert("13 digits required.");
 
@@ -202,29 +200,29 @@
             if (error) alert("Error: " + error.message);
             else { 
                 document.getElementById('ticketNum').value = ''; 
-                window.fetchTickets(); 
+                fetchTickets(); 
             }
-        };
+        }
 
-        window.updateTicket = async function() {
-            if (!selectedTicketId) return alert("Select a ticket from the table first.");
+        async function updateTicket() {
+            if (!selectedTicketId) return alert("Select a ticket first.");
             const { error } = await supabase.from('tickets').update({
                 type: document.getElementById('ticketType').value,
                 status: document.getElementById('ticketStatus').value
             }).eq('id', selectedTicketId);
             
             if (error) alert(error.message);
-            else { alert("Ticket Updated"); window.fetchTickets(); }
-        };
+            else { alert("Ticket Updated"); fetchTickets(); }
+        }
 
-        window.deleteTicket = async function() {
-            if (!selectedTicketId || !confirm("Delete this record permanently?")) return;
+        async function deleteTicket() {
+            if (!selectedTicketId || !confirm("Delete permanently?")) return;
             const { error } = await supabase.from('tickets').delete().eq('id', selectedTicketId);
             if (error) alert(error.message);
-            else { selectedTicketId = null; window.fetchTickets(); }
-        };
+            else { selectedTicketId = null; fetchTickets(); }
+        }
 
-        window.renderTable = function(data) {
+        function renderTable(data) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             data.forEach(t => {
@@ -234,7 +232,7 @@
                 
                 row.onclick = () => {
                     selectedTicketId = t.id;
-                    window.renderTable(data); 
+                    renderTable(data); 
                     if(userProfile && userProfile.role === 'admin') {
                         document.getElementById('ticketNum').value = t.ticket_num;
                         document.getElementById('ticketType').value = t.type;
@@ -243,42 +241,42 @@
                 };
                 row.innerHTML = `<td>${t.ticket_num}</td><td>${t.type}</td><td>${t.status}</td><td>${t.processed_by}</td>`;
             });
-        };
+        }
 
-        window.filterTable = function() {
+        function filterTable() {
             const q = document.getElementById('search').value.toLowerCase();
-            window.renderTable(ticketsList.filter(t => t.ticket_num.includes(q)));
-        };
+            renderTable(ticketsList.filter(t => t.ticket_num.includes(q)));
+        }
 
-        window.updatePassword = async function() {
+        async function updatePassword() {
             const p = document.getElementById('new-password').value;
-            if (p.length < 6) return alert("Password must be at least 6 characters.");
+            if (p.length < 6) return alert("Min 6 characters.");
             const { error } = await supabase.auth.updateUser({ password: p });
             if (error) alert(error.message); 
-            else { alert("Password Updated Successfully!"); window.closeSettings(); }
-        };
+            else { alert("Saved!"); closeSettings(); }
+        }
 
-        window.openSettings = function() { 
+        function openSettings() { 
             document.getElementById('main-app').style.display='none'; 
             document.getElementById('settings-screen').style.display='block'; 
-        };
+        }
         
-        window.closeSettings = function() { 
+        function closeSettings() { 
             document.getElementById('settings-screen').style.display='none'; 
             document.getElementById('main-app').style.display='block'; 
-        };
+        }
 
-        window.logout = function() { location.reload(); };
+        function logout() { location.reload(); }
 
-        window.exportCSV = function() {
-            if (ticketsList.length === 0) return alert("No data to export.");
-            let csv = "Ticket Number,Type,Status,Staff\n" + ticketsList.map(t => `${t.ticket_num},${t.type},${t.status},${t.processed_by}`).join("\n");
+        function exportCSV() {
+            if (ticketsList.length === 0) return alert("No data.");
+            let csv = "Ticket,Type,Status,Staff\n" + ticketsList.map(t => `${t.ticket_num},${t.type},${t.status},${t.processed_by}`).join("\n");
             const blob = new Blob([csv], { type: 'text/csv' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = 'Saudia_TMS_Report.csv';
             a.click();
-        };
+        }
     </script>
 </body>
 </html>
