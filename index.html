@@ -119,17 +119,17 @@
         const SUPABASE_URL = 'https://loblicverqcijkqatvhs.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvYmxpY3ZlcnFjaWprcWF0dmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMTAyOTYsImV4cCI6MjA5MTY4NjI5Nn0.vV-rpPzniYgSTzBStfikL_SJc722-41ezkiJnI4nOPs';
         
-        // Initialize Supabase Client
+        // --- INITIALIZE ONCE ---
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // State Variables
         let currentUser = null;
         let userProfile = null;
-        let tickets = [];
+        let ticketsList = []; // Renamed slightly to avoid confusion
         let selectedTicketId = null;
         let isRegisterMode = false;
 
-        // --- 2. AUTHENTICATION (Globalized with window.) ---
+        // --- 2. AUTHENTICATION ---
         window.toggleAuthMode = function() {
             isRegisterMode = !isRegisterMode;
             document.getElementById('reg-extra').style.display = isRegisterMode ? 'block' : 'none';
@@ -184,8 +184,8 @@
         window.fetchTickets = async function() {
             const { data, error } = await supabase.from('tickets').select('*').order('created_at', { ascending: false });
             if (error) console.error(error);
-            tickets = data || [];
-            window.renderTable(tickets);
+            ticketsList = data || [];
+            window.renderTable(ticketsList);
         };
 
         window.saveTicket = async function() {
@@ -247,7 +247,7 @@
 
         window.filterTable = function() {
             const q = document.getElementById('search').value.toLowerCase();
-            window.renderTable(tickets.filter(t => t.ticket_num.includes(q)));
+            window.renderTable(ticketsList.filter(t => t.ticket_num.includes(q)));
         };
 
         window.updatePassword = async function() {
@@ -271,8 +271,8 @@
         window.logout = function() { location.reload(); };
 
         window.exportCSV = function() {
-            if (tickets.length === 0) return alert("No data to export.");
-            let csv = "Ticket Number,Type,Status,Staff\n" + tickets.map(t => `${t.ticket_num},${t.type},${t.status},${t.processed_by}`).join("\n");
+            if (ticketsList.length === 0) return alert("No data to export.");
+            let csv = "Ticket Number,Type,Status,Staff\n" + ticketsList.map(t => `${t.ticket_num},${t.type},${t.status},${t.processed_by}`).join("\n");
             const blob = new Blob([csv], { type: 'text/csv' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
