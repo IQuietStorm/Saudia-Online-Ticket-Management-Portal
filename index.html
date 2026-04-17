@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saudia Airlines - Cloud TMS</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --saudia-green: #006C35;
+            --saudia-gold: #8E713E;
+            --used-bg: #D1F2EB;
+            --refund-bg: #FADBD8;
+            --admin-red: #b22222;
+        }
+
+        body { font-family: 'Times New Roman', serif; margin: 0; background-color: #f0f2f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        
+        #login-screen, #settings-screen { background: white; padding: 40px; border-radius: 4px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; width: 400px; border-top: 6px solid var(--saudia-green); }
+        #main-app, #settings-screen { display: none; }
+
+        header { background-color: var(--saudia-green); color: white; padding: 25px; text-align: center; border-bottom: 4px solid var(--saudia-gold); position: relative; }
+        .user-info { position: absolute; right: 25px; top: 50%; transform: translateY(-50%); text-align: right; font-family: Arial; font-size: 0.85em; }
+        
+        .container { padding: 40px; font-family: Arial, sans-serif; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; box-sizing: border-box; }
+
+        .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; padding: 14px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; color: white; }
+        .btn-save { background: var(--saudia-green); }
+        .btn-export { background: #444; }
+        .btn-update { background: var(--saudia-gold); display: none; }
+        .btn-delete { background: var(--admin-red); display: none; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th { background: #f4f4f4; color: var(--saudia-green); text-align: left; padding: 15px; border-bottom: 2px solid var(--saudia-gold); }
+        td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 14px; }
+        .row-used { background-color: var(--used-bg); }
+        .row-refund { background-color: var(--refund-bg); }
+        .selected-row { outline: 3px solid var(--saudia-green); }
+        
+        footer { text-align: center; padding: 15px; font-size: 11px; color: #888; }
+        .toggle-link { color: var(--saudia-green); cursor: pointer; margin-top: 15px; display: inline-block; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h1 style="color: var(--saudia-green); margin:0;">SAUDIA</h1>
+        <p id="auth-title" style="color: var(--saudia-gold); font-weight: bold;">CLOUD TMS LOGIN</p>
+        
+        <div id="reg-extra" style="display:none;">
+            <input type="text" id="reg-fullname" placeholder="Full Name" style="margin-bottom:10px;">
+        </div>
+        <input type="text" id="email" placeholder="Username/Email" style="margin-bottom:10px;">
+        <input type="password" id="password" placeholder="Password" style="margin-bottom:15px;">
+
+        <button class="btn-save" style="width:100%" onclick="handleAuth()" id="auth-btn">Sign In</button>
+        <span class="toggle-link" onclick="toggleAuthMode()" id="auth-toggle">New User? Create Account</span>
+    </div>
+
+    <div id="settings-screen">
+        <h3>Update Security</h3>
+        <input type="password" id="new-password" placeholder="New Password">
+        <div class="btn-row">
+            <button class="btn-save" onclick="updatePassword()">Save</button>
+            <button class="btn-export" onclick="closeSettings()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="main-app">
+        <header>
+            <h1 style="margin:0; letter-spacing: 5px;">SAUDIA</h1>
+            <div class="user-info">
+                <span id="display-name"></span><br>
+                <span style="cursor:pointer; text-decoration:underline;" onclick="openSettings()">Settings</span> | 
+                <span style="cursor:pointer; text-decoration:underline;" onclick="logout()">Logout</span>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="form-group">
+                <label>Ticket Number (13 Digits)</label>
+                <input type="text" id="ticketNum" maxlength="13">
+            </div>
+            <div style="display:flex; gap:15px;">
+                <select id="ticketType">
+                    <option>Fresh Issued</option><option>Re-issued</option><option>Re-booked</option>
+                </select>
+                <select id="ticketStatus">
+                    <option value="Used">Used</option><option value="To be Refunded">To be Refunded</option>
+                </select>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn-save" onclick="saveTicket()">Save to Cloud</button>
+                <button class="btn-export" onclick="exportCSV()">Export CSV</button>
+                <button id="admin-upd" class="btn-update" onclick="updateTicket()">Update</button>
+                <button id="admin-del" class="btn-delete" onclick="deleteTicket()">Delete</button>
+            </div>
+
+            <input type="text" id="search" placeholder="Search live database..." onkeyup="filterTable()" style="margin-top:20px;">
+            
+            <table>
+                <thead>
+                    <tr><th>Ticket Number</th><th>Type</th><th>Status</th><th>By Staff</th></tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+        <footer>PROPERTY OF SAUDIA AIRLINES © 2026</footer>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURATION (REPLACE THESE) ---
+        const SUPABASE_URL = 'https://loblicverqcijkqatvhs.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvYmxpY3ZlcnFjaWprcWF0dmhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMTAyOTYsImV4cCI6MjA5MTY4NjI5Nn0.vV-rpPzniYgSTzBStfikL_SJc722-41ezkiJnI4nOPs';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+        let userProfile = null;
+        let tickets = [];
+        let selectedTicketId = null;
+        let isRegisterMode = false;
+
+        // --- 2. AUTHENTICATION ---
+        function toggleAuthMode() {
+            isRegisterMode = !isRegisterMode;
+            document.getElementById('reg-extra').style.display = isRegisterMode ? 'block' : 'none';
+            document.getElementById('auth-btn').innerText = isRegisterMode ? 'Register' : 'Sign In';
+            document.getElementById('auth-toggle').innerText = isRegisterMode ? 'Back to Login' : 'New User? Create Account';
+        }
+
+        async function handleAuth() {
+            let emailInput = document.getElementById('email').value.trim();
+            // Allow users to just type 'kanbs' instead of full email
+            const email = emailInput.includes('@') ? emailInput : emailInput + "@saudia-tms.com";
+            const password = document.getElementById('password').value;
+
+            if (isRegisterMode) {
+                const fullName = document.getElementById('reg-fullname').value;
+                const { data, error } = await supabase.auth.signUp({ email, password });
+                if (error) return alert(error.message);
+                
+                // Create Profile
+                await supabase.from('profiles').insert([{ id: data.user.id, full_name: fullName, role: 'user' }]);
+                alert("Account created! You can now login.");
+                toggleAuthMode();
+            } else {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) return alert(error.message);
+                currentUser = data.user;
+                loadApp();
+            }
+        }
+
+        async function loadApp() {
+            // Get user profile/role
+            const { data } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+            userProfile = data;
+
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            document.getElementById('display-name').innerText = userProfile.full_name;
+
+            if (userProfile.role === 'admin') {
+                document.getElementById('admin-upd').style.display = 'block';
+                document.getElementById('admin-del').style.display = 'block';
+            }
+            fetchTickets();
+        }
+
+        // --- 3. TICKET LOGIC ---
+        async function fetchTickets() {
+            const { data } = await supabase.from('tickets').select('*').order('created_at', { ascending: false });
+            tickets = data;
+            renderTable(tickets);
+        }
+
+        async function saveTicket() {
+            const num = document.getElementById('ticketNum').value.trim();
+            if (num.length !== 13) return alert("13 digits required.");
+
+            const { error } = await supabase.from('tickets').insert([{
+                ticket_num: num,
+                type: document.getElementById('ticketType').value,
+                status: document.getElementById('ticketStatus').value,
+                processed_by: userProfile.full_name
+            }]);
+
+            if (error) alert("Duplicate or Error: " + error.message);
+            else { document.getElementById('ticketNum').value = ''; fetchTickets(); }
+        }
+
+        async function updateTicket() {
+            if (!selectedTicketId) return alert("Select a ticket first.");
+            await supabase.from('tickets').update({
+                type: document.getElementById('ticketType').value,
+                status: document.getElementById('ticketStatus').value
+            }).eq('id', selectedTicketId);
+            fetchTickets();
+        }
+
+        async function deleteTicket() {
+            if (!selectedTicketId || !confirm("Delete record?")) return;
+            await supabase.from('tickets').delete().eq('id', selectedTicketId);
+            selectedTicketId = null;
+            fetchTickets();
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            data.forEach(t => {
+                const row = tbody.insertRow();
+                row.className = t.status === 'Used' ? 'row-used' : 'row-refund';
+                if (selectedTicketId === t.id) row.classList.add('selected-row');
+                
+                row.onclick = () => {
+                    selectedTicketId = t.id;
+                    renderTable(data); // refresh highlights
+                    if(userProfile.role === 'admin') {
+                        document.getElementById('ticketNum').value = t.ticket_num;
+                        document.getElementById('ticketType').value = t.type;
+                        document.getElementById('ticketStatus').value = t.status;
+                    }
+                };
+                row.innerHTML = `<td>${t.ticket_num}</td><td>${t.type}</td><td>${t.status}</td><td>${t.processed_by}</td>`;
+            });
+        }
+
+        // --- 4. UTILS ---
+        function filterTable() {
+            const q = document.getElementById('search').value.toLowerCase();
+            renderTable(tickets.filter(t => t.ticket_num.includes(q)));
+        }
+
+        async function updatePassword() {
+            const p = document.getElementById('new-password').value;
+            const { error } = await supabase.auth.updateUser({ password: p });
+            if (error) alert(error.message); else { alert("Saved!"); closeSettings(); }
+        }
+
+        function openSettings() { document.getElementById('main-app').style.display='none'; document.getElementById('settings-screen').style.display='block'; }
+        function closeSettings() { document.getElementById('settings-screen').style.display='none'; document.getElementById('main-app').style.display='block'; }
+        function logout() { location.reload(); }
+
+        function exportCSV() {
+            let csv = "Ticket,Type,Status,Staff\n" + tickets.map(t => `${t.ticket_num},${t.type},${t.status},${t.processed_by}`).join("\n");
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'Saudia_Cloud_Report.csv';
+            a.click();
+        }
+    </script>
+</body>
+</html>
