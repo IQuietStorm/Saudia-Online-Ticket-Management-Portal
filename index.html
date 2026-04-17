@@ -97,6 +97,10 @@
 
         async function loadApp() {
             const { data } = await saudiaClient.from('profiles').select('*').eq('id', activeUser.id).single();
+            // THE DEBUGGER
+            console.log("Database Data:", data);
+            console.log("Database Error:", error);
+
             activeProfile = data;
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
