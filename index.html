@@ -29,13 +29,9 @@
     <div id="login-screen">
         <h1 style="color: var(--saudia-green); margin:0;">SAUDIA</h1>
         <p id="auth-title" style="color: var(--saudia-gold); font-weight: bold; margin-bottom:20px;">CLOUD TMS LOGIN</p>
-        
-        <div id="reg-extra" style="display:none;">
-            <input type="text" id="reg-fullname" placeholder="Full Name">
-        </div>
+        <div id="reg-extra" style="display:none;"><input type="text" id="reg-fullname" placeholder="Full Name"></div>
         <input type="text" id="email" placeholder="Username/Email">
         <input type="password" id="password" placeholder="Password">
-        
         <button onclick="handleAuth()" id="auth-btn">Sign In</button>
         <br>
         <span class="toggle-link" onclick="toggleAuthMode()" id="auth-toggle">New User? Create Account</span>
@@ -44,22 +40,14 @@
     <div id="main-app">
         <header>
             <h1 style="margin:0; letter-spacing: 5px;">SAUDIA</h1>
-            <div class="user-info">
-                <span id="display-name"></span> | <span style="cursor:pointer;" onclick="location.reload()">Logout</span>
-            </div>
+            <div class="user-info"><span id="display-name"></span> | <span style="cursor:pointer;" onclick="location.reload()">Logout</span></div>
         </header>
         <div class="container">
             <input type="text" id="ticketNum" placeholder="13 Digit Ticket Number" maxlength="13">
-            <select id="ticketType">
-                <option>Fresh Issued</option><option>Re-issued</option><option>Re-booked</option>
-            </select>
-            <select id="ticketStatus">
-                <option value="Used">Used</option><option value="To be Refunded">To be Refunded</option>
-            </select>
+            <select id="ticketType"><option>Fresh Issued</option><option>Re-issued</option><option>Re-booked</option></select>
+            <select id="ticketStatus"><option value="Used">Used</option><option value="To be Refunded">To be Refunded</option></select>
             <button onclick="saveTicket()">Save to Cloud</button>
-            
             <input type="text" id="search" placeholder="Search..." onkeyup="filterTable()" style="margin-top:20px;">
-            
             <table>
                 <thead><tr><th>Ticket Number</th><th>Type</th><th>Status</th><th>By Staff</th></tr></thead>
                 <tbody id="tableBody"></tbody>
@@ -73,74 +61,69 @@
         const SAUDIA_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
         const SAUDIA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
         
-        // This variable 'supabase' is declared ONLY ONCE right here.
-        const supabase = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY);
+        // Using 'saudiaClient' instead of 'supabase'
+        const saudiaClient = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY);
 
-        let userAccount = null;
-        let userFullProfile = null;
-        let ticketsArray = [];
-        let isModeRegister = false;
+        let activeUser = null;
+        let activeProfile = null;
+        let ticketsList = [];
+        let isRegMode = false;
 
-        // --- FUNCTIONS ---
         function toggleAuthMode() {
-            isModeRegister = !isModeRegister;
-            document.getElementById('reg-extra').style.display = isModeRegister ? 'block' : 'none';
-            document.getElementById('auth-btn').innerText = isModeRegister ? 'Register' : 'Sign In';
-            document.getElementById('auth-toggle').innerText = isModeRegister ? 'Back to Login' : 'New User? Create Account';
-            document.getElementById('auth-title').innerText = isModeRegister ? 'CREATE ACCOUNT' : 'CLOUD TMS LOGIN';
+            isRegMode = !isRegMode;
+            document.getElementById('reg-extra').style.display = isRegMode ? 'block' : 'none';
+            document.getElementById('auth-btn').innerText = isRegMode ? 'Register' : 'Sign In';
+            document.getElementById('auth-toggle').innerText = isRegMode ? 'Back to Login' : 'New User? Create Account';
         }
 
         async function handleAuth() {
-            const emailField = document.getElementById('email').value.trim();
-            if (!emailField) return alert("Enter email.");
-            
-            const email = emailField.includes('@') ? emailField : emailField + "@saudia-tms.com";
+            const emailIn = document.getElementById('email').value.trim();
+            const email = emailIn.includes('@') ? emailIn : emailIn + "@saudia-tms.com";
             const password = document.getElementById('password').value;
 
-            if (isModeRegister) {
+            if (isRegMode) {
                 const name = document.getElementById('reg-fullname').value;
-                const { data, error } = await supabase.auth.signUp({ email, password });
+                const { data, error } = await saudiaClient.auth.signUp({ email, password });
                 if (error) return alert(error.message);
-                await supabase.from('profiles').insert([{ id: data.user.id, full_name: name, role: 'user' }]);
-                alert("Success! Verify email then Login.");
-                toggleAuthMode();
+                await saudiaClient.from('profiles').insert([{ id: data.user.id, full_name: name, role: 'user' }]);
+                alert("Check email!"); toggleAuthMode();
             } else {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                const { data, error } = await saudiaClient.auth.signInWithPassword({ email, password });
                 if (error) return alert(error.message);
-                userAccount = data.user;
-                runApp();
+                activeUser = data.user;
+                loadApp();
             }
         }
 
-        async function runApp() {
-            const { data } = await supabase.from('profiles').select('*').eq('id', userAccount.id).single();
-            userFullProfile = data;
+        async function loadApp() {
+            const { data } = await saudiaClient.from('profiles').select('*').eq('id', activeUser.id).single();
+            activeProfile = data;
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
-            document.getElementById('display-name').innerText = userFullProfile.full_name;
-            loadData();
+            document.getElementById('display-name').innerText = activeProfile.full_name;
+            getTickets();
         }
 
-        async function loadData() {
-            const { data } = await supabase.from('tickets').select('*').order('created_at', { ascending: false });
-            ticketsArray = data || [];
-            displayTable(ticketsArray);
+        async function getTickets() {
+            const { data } = await saudiaClient.from('tickets').select('*').order('created_at', { ascending: false });
+            ticketsList = data || [];
+            renderTable(ticketsList);
         }
 
         async function saveTicket() {
             const val = document.getElementById('ticketNum').value.trim();
-            if (val.length !== 13) return alert("13 digits needed.");
-            const { error } = await supabase.from('tickets').insert([{
+            if (val.length !== 13) return alert("13 digits required.");
+            await saudiaClient.from('tickets').insert([{
                 ticket_num: val,
                 type: document.getElementById('ticketType').value,
                 status: document.getElementById('ticketStatus').value,
-                processed_by: userFullProfile.full_name
+                processed_by: activeProfile.full_name
             }]);
-            if (error) alert(error.message);
-            else { document.getElementById('ticketNum').value = ''; loadData(); }
+            document.getElementById('ticketNum').value = '';
+            getTickets();
         }
 
-        function displayTable(data) {
+        function renderTable(data) {
             const body = document.getElementById('tableBody');
             body.innerHTML = '';
             data.forEach(t => {
@@ -152,7 +135,7 @@
 
         function filterTable() {
             const s = document.getElementById('search').value.toLowerCase();
-            displayTable(ticketsArray.filter(x => x.ticket_num.includes(s)));
+            renderTable(ticketsList.filter(x => x.ticket_num.includes(s)));
         }
     </script>
 </body>
