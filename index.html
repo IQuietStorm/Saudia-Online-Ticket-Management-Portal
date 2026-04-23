@@ -15,53 +15,60 @@
         }
         body { font-family: 'Times New Roman', serif; margin: 0; background-color: #f0f2f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         
-        /* LOGIN SCREEN UPDATES */
         #login-screen { background: white; padding: 40px; border-radius: 4px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; width: 400px; border-top: 6px solid var(--islamic-green); }
-        
         #main-app { display: none; width: 100%; max-width: 1200px; background: white; min-height: 90vh; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; margin: 20px; }
         
-        /* HEADER STYLING - WHITE WITH GREEN & GOLD BORDERS */
+        /* HEADER STYLING */
         header { 
             background-color: #ffffff; 
-            padding: 15px 25px; 
-            border-top: 5px solid var(--islamic-green);
+            padding: 10px 25px; 
+            border-top: 6px solid var(--islamic-green);
             border-bottom: 4px solid var(--saudia-gold); 
             display: flex; 
             align-items: center; 
             position: relative; 
-            min-height: 80px;
+            min-height: 90px;
         }
         
-        .header-logo { 
+        .logo-box {
             position: absolute;
-            top: 10px;
+            top: 50%;
             left: 20px;
-            height: 60px; 
-            width: auto; 
+            transform: translateY(-50%);
+            width: 80px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-logo { 
+            max-height: 100%; 
+            max-width: 100%; 
             object-fit: contain; 
         }
 
         .header-title {
-            margin: 0 auto; /* Centers the text while logo is absolute */
+            margin: 0 auto;
             color: var(--islamic-green);
-            letter-spacing: 3px;
-            font-size: 2.2em;
+            letter-spacing: 2px;
+            font-size: 2em;
             font-weight: bold;
             text-transform: uppercase;
         }
         
         .user-info { position: absolute; right: 25px; top: 50%; transform: translateY(-50%); text-align: right; font-family: Arial; font-size: 0.85em; color: #333; }
         
-        /* REST OF UI */
+        /* UI ELEMENTS */
         .container { padding: 30px; font-family: Arial, sans-serif; }
         input, select { width: 100%; padding: 10px; border: 1px solid #ccc; box-sizing: border-box; margin-bottom: 10px; border-radius: 4px; }
         .dynamic-section { background: #f9f9f9; padding: 15px; border-left: 4px solid var(--saudia-gold); margin-bottom: 15px; }
         .btn-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
         button { padding: 12px 20px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; color: white; border-radius: 4px; background: var(--islamic-green); transition: 0.3s; }
-        button:hover { filter: brightness(1.1); }
         .btn-update { background: var(--saudia-gold); display: none; }
         .btn-delete { background: #b22222; display: none; }
         .btn-export { background: #2e7d32; }
+        
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
         th { background: #f4f4f4; color: var(--islamic-green); text-align: left; padding: 12px; border-bottom: 2px solid var(--saudia-gold); cursor: pointer; }
         td { padding: 10px; border-bottom: 1px solid #eee; }
@@ -86,7 +93,9 @@
 
     <div id="main-app">
         <header>
-            <img src="D:\Documents\WORKS\Virtual Switch International\SaudiaTMS\Saudia_Logo.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+            <div class="logo-box">
+                <img src="D:\Documents\WORKS\Virtual Switch International\SaudiaTMS\Saudia_Logo.png" alt="Logo" class="header-logo" onerror="this.src='https://via.placeholder.com/80x60/009000/FFFFFF?text=SAUDI'">
+            </div>
             <h1 class="header-title">SAUDI AIRLINE</h1>
             <div class="user-info"><span id="display-name"></span> | <span style="cursor:pointer;" onclick="location.reload()">Logout</span></div>
         </header>
@@ -101,13 +110,13 @@
                         <option value="Fresh Issued">Fresh Issued</option>
                         <option value="Re-issued">Re-issued</option>
                         <option value="Re-booked">Re-booked</option>
-                        <option value="N/A">N/A</option>
                     </select>
                     <label>Ticket Status</label>
                     <select id="ticketStatus" onchange="toggleDynamicFields()">
                         <option value="Flown">Flown</option>
                         <option value="To be Refunded">To be Refunded</option>
                         <option value="Refunded">Refunded</option>
+                        <option value="N/A">N/A</option>
                     </select>
                 </div>
                 <div>
@@ -172,7 +181,7 @@
     </div>
 
     <script>
-       const SAUDIA_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
+        const SAUDIA_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
         const SAUDIA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
         const saudiaClient = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY);
 
@@ -224,11 +233,21 @@
         function toggleDynamicFields() {
             const type = document.getElementById('ticketType').value;
             const status = document.getElementById('ticketStatus').value;
-            document.getElementById('dateLabel').innerText = "Date of " + (type === "N/A" ? "Issue" : type.replace('Issued', 'Issue').replace('Re-issued', 'Re-issue').replace('Re-booked', 'Re-book'));
-            document.getElementById('reason-box').style.display = (type === "Fresh Issued" || type === "N/A") ? "none" : "block";
+            
+            // Type Logic
+            document.getElementById('dateLabel').innerText = "Date of " + type.replace('Issued', 'Issue').replace('Re-issued', 'Re-issue').replace('Re-booked', 'Re-book');
+            document.getElementById('reason-box').style.display = (type === "Fresh Issued") ? "none" : "block";
+            
+            // Status Logic
             document.getElementById('flown-box').style.display = (status === "Flown") ? "block" : "none";
-            document.getElementById('refund-box').style.display = (status === "Flown") ? "none" : "block";
+            document.getElementById('refund-box').style.display = (status === "Flown" || status === "N/A") ? "none" : "block";
             document.getElementById('refund-ext-box').style.display = (status === "Refunded") ? "block" : "none";
+            
+            // N/A Logic (Hide all extra boxes except Issue Info)
+            if (status === "N/A") {
+                document.getElementById('flown-box').style.display = "none";
+                document.getElementById('refund-box').style.display = "none";
+            }
         }
 
         async function getTickets() {
