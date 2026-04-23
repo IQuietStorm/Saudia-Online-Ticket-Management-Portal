@@ -130,13 +130,43 @@
         }
 
         async function handleAuth() {
-            const emailIn = document.getElementById('email').value.trim();
-            const email = emailIn.includes('@') ? emailIn : emailIn + "@saudia-tms.com";
-            const password = document.getElementById('password').value;
-            const { data, error } = await saudiaClient.auth.signInWithPassword({ email, password });
-            if (error) alert(error.message); else { activeUser = data.user; loadApp(); }
-        }
+    const emailIn = document.getElementById('email').value.trim();
+    const email = emailIn.includes('@') ? emailIn : emailIn + "@saudia-tms.com";
+    const password = document.getElementById('password').value;
 
+    if (isRegMode) {
+        const name = document.getElementById('reg-fullname').value;
+        if (!name) return alert("Please enter your Full Name");
+
+        // 1. Sign up WITH metadata
+        const { data, error: signUpError } = await saudiaClient.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { full_name: name } // This stores the name inside Auth
+            }
+        });
+
+        if (signUpError) return alert(signUpError.message);
+
+        // 2. Insert into profiles table
+        const { error: profileError } = await saudiaClient.from('profiles').insert([
+            { id: data.user.id, full_name: name, role: 'user' }
+        ]);
+
+        if (profileError) {
+            console.error("Profile creation failed:", profileError);
+            alert("Account created, but profile failed. Admin must set your name.");
+        } else {
+            alert("Registration successful! You can now Sign In.");
+            toggleAuthMode();
+        }
+    } else {
+        const { data, error } = await saudiaClient.auth.signInWithPassword({ email, password });
+        if (error) alert(error.message); 
+        else { activeUser = data.user; loadApp(); }
+    }
+}
         async function loadApp() {
             const { data } = await saudiaClient.from('profiles').select('*').eq('id', activeUser.id).single();
             activeProfile = data;
