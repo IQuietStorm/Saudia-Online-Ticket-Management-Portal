@@ -17,32 +17,28 @@
         .dynamic-section { background: #f9f9f9; padding: 15px; border-left: 4px solid var(--saudia-gold); margin-bottom: 15px; }
         .btn-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
         button { padding: 12px 20px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; color: white; border-radius: 4px; background: var(--saudia-green); transition: 0.3s; }
-        button:hover { opacity: 0.9; }
         .btn-update { background: var(--saudia-gold); display: none; }
         .btn-delete { background: #b22222; display: none; }
         .btn-export { background: #2e7d32; }
-        
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
-        th { background: #f4f4f4; color: var(--saudia-green); text-align: left; padding: 12px; border-bottom: 2px solid var(--saudia-gold); cursor: pointer; user-select: none; }
-        th:hover { background: #e0e0e0; }
+        th { background: #f4f4f4; color: var(--saudia-green); text-align: left; padding: 12px; border-bottom: 2px solid var(--saudia-gold); cursor: pointer; }
         td { padding: 10px; border-bottom: 1px solid #eee; }
         .row-used { background-color: var(--used-bg); }
         .row-refund { background-color: var(--refund-bg); }
         .selected-row { outline: 2px solid var(--saudia-gold); }
         label { font-size: 11px; font-weight: bold; color: #555; display: block; margin-bottom: 2px; }
-        .checkbox-cell { text-align: center; width: 40px; }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
-        <h1 style="color: var(--saudia-green); margin:0;">SAUDIA</h1>
-        <p style="color: var(--saudia-gold); font-weight: bold;">CLOUD TMS LOGIN</p>
+        <h1 style="color: var(--saudia-green); margin:0;">SAUDI AIRLINE</h1>
+        <p id="auth-title" style="color: var(--saudia-gold); font-weight: bold;">CLOUD TMS LOGIN</p>
         <div id="reg-extra" style="display:none;"><input type="text" id="reg-fullname" placeholder="Full Name"></div>
         <input type="text" id="email" placeholder="Username/Email">
         <input type="password" id="password" placeholder="Password">
-        <button onclick="handleAuth()">Sign In</button>
-        <br><span style="cursor:pointer; text-decoration:underline; font-size:12px;" onclick="toggleAuthMode()">Create Account</span>
+        <button onclick="handleAuth()" id="main-auth-btn">Sign In</button>
+        <br><span id="auth-toggle" style="cursor:pointer; text-decoration:underline; font-size:12px;" onclick="toggleAuthMode()">New User? Create Account</span>
     </div>
 
     <div id="main-app">
@@ -50,7 +46,6 @@
             <h1 style="margin:0; letter-spacing: 5px;">SAUDIA</h1>
             <div class="user-info"><span id="display-name"></span> | <span style="cursor:pointer;" onclick="location.reload()">Logout</span></div>
         </header>
-
         <div class="container">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                 <div>
@@ -87,20 +82,17 @@
                     </div>
                 </div>
             </div>
-
             <div class="btn-row">
                 <button onclick="saveTicket()">Save Ticket</button>
                 <button id="admin-upd" class="btn-update" onclick="updateTicket()">Update Selected</button>
                 <button id="admin-del" class="btn-delete" onclick="deleteTicket()">Delete Selected</button>
                 <button class="btn-export" onclick="exportSelectedToCSV()">Export Selected to CSV</button>
             </div>
-
-            <input type="text" id="search" placeholder="Quick search ticket numbers..." onkeyup="filterTable()" style="margin-top:20px;">
-            
+            <input type="text" id="search" placeholder="Search..." onkeyup="filterTable()" style="margin-top:20px;">
             <table>
                 <thead>
                     <tr>
-                        <th class="checkbox-cell"><input type="checkbox" id="selectAll" onclick="toggleAllCheckboxes()"></th>
+                        <th><input type="checkbox" id="selectAll" onclick="toggleAllCheckboxes()"></th>
                         <th onclick="sortData('ticket_num')">Ticket # ↕</th>
                         <th onclick="sortData('type')">Type ↕</th>
                         <th onclick="sortData('status')">Status ↕</th>
@@ -115,23 +107,63 @@
     </div>
 
     <script>
-    // 1. CONFIGURATION
-    const SAUDIA_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
+         const SAUDIA_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
         const SAUDIA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
-        
-    // 2. THE CLIENT
-    const saudiaClient = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY);
+        const saudiaClient = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY);
 
-    // 3. GLOBAL VARIABLES (Must be declared here!)
-    let activeUser = null;
-    let activeProfile = null;
-    let ticketsList = [];
-    let selectedTicketId = null;
-    let sortDir = 1;
-    let currentSort = 'created_at';
-    let isRegMode = false; // <--- THE FIX: This defines the variable globally
+        let activeUser, activeProfile, ticketsList = [], selectedTicketId = null, sortDir = 1, currentSort = 'created_at', isRegMode = false;
 
-    // ... your functions (handleAuth, loadApp, etc.) follow below
+        function toggleAuthMode() {
+            isRegMode = !isRegMode;
+            const extra = document.getElementById('reg-extra');
+            const btn = document.getElementById('main-auth-btn');
+            const title = document.getElementById('auth-title');
+            const toggle = document.getElementById('auth-toggle');
+
+            if (isRegMode) {
+                extra.style.display = 'block';
+                title.innerText = "CREATE ACCOUNT";
+                btn.innerText = "REGISTER ACCOUNT";
+                toggle.innerText = "Already have an account? Sign In";
+            } else {
+                extra.style.display = 'none';
+                title.innerText = "CLOUD TMS LOGIN";
+                btn.innerText = "SIGN IN";
+                toggle.innerText = "New User? Create Account";
+            }
+        }
+
+        async function handleAuth() {
+            const emailIn = document.getElementById('email').value.trim();
+            const email = emailIn.includes('@') ? emailIn : emailIn + "@saudia-tms.com";
+            const password = document.getElementById('password').value;
+
+            if (isRegMode) {
+                const name = document.getElementById('reg-fullname').value;
+                const { data, error } = await saudiaClient.auth.signUp({ email, password, options: { data: { full_name: name } } });
+                if (error) return alert(error.message);
+                await saudiaClient.from('profiles').insert([{ id: data.user.id, full_name: name, role: 'user' }]);
+                alert("Account Created!"); toggleAuthMode();
+            } else {
+                const { data, error } = await saudiaClient.auth.signInWithPassword({ email, password });
+                if (error) return alert(error.message);
+                activeUser = data.user; loadApp();
+            }
+        }
+
+        async function loadApp() {
+            const { data } = await saudiaClient.from('profiles').select('*').eq('id', activeUser.id).single();
+            activeProfile = data;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            document.getElementById('display-name').innerText = activeProfile.full_name;
+            if (activeProfile.role === 'admin') {
+                document.getElementById('admin-upd').style.display = 'block';
+                document.getElementById('admin-del').style.display = 'block';
+            }
+            getTickets();
+        }
+
         function toggleDynamicFields() {
             const type = document.getElementById('ticketType').value;
             const status = document.getElementById('ticketStatus').value;
@@ -141,80 +173,17 @@
             document.getElementById('refund-box').style.display = (status === "Used") ? "none" : "block";
         }
 
-async function handleAuth() {
-    const emailIn = document.getElementById('email').value.trim();
-    const email = emailIn.includes('@') ? emailIn : emailIn + "@saudia-tms.com";
-    const password = document.getElementById('password').value;
-
-    if (isRegMode) {
-        const name = document.getElementById('reg-fullname').value;
-        if (!name) return alert("Please enter your Full Name");
-
-        // 1. SIGN UP
-        const { data, error: signUpError } = await saudiaClient.auth.signUp({
-            email,
-            password,
-            options: { data: { full_name: name } }
-        });
-
-        if (signUpError) {
-            console.error("Signup Error:", signUpError);
-            return alert("Signup Failed: " + signUpError.message);
-        }
-
-        // 2. CREATE PROFILE
-        const { error: profileError } = await saudiaClient.from('profiles').insert([
-            { id: data.user.id, full_name: name, role: 'user' }
-        ]);
-
-        if (profileError) {
-            console.error("Profile Insert Error:", profileError);
-            // This happens if RLS is blocking the insert
-            alert("Account created, but could not save your name to Profiles. Check RLS policies.");
-        } else {
-            alert("Registration successful! You can now Sign In.");
-            toggleAuthMode();
-        }
-    } else {
-        // ... Sign In Logic ...
-        const { data, error } = await saudiaClient.auth.signInWithPassword({ email, password });
-        if (error) alert(error.message); 
-        else { activeUser = data.user; loadApp(); }
-    }
-}
-        async function loadApp() {
-            const { data } = await saudiaClient.from('profiles').select('*').eq('id', activeUser.id).single();
-            activeProfile = data;
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
-            document.getElementById('display-name').innerText = activeProfile.full_name;
-            if (activeProfile.role === 'admin') { document.querySelectorAll('.btn-update, .btn-delete').forEach(b => b.style.display = 'block'); }
-            getTickets();
-        }
-
         async function getTickets() {
             const { data } = await saudiaClient.from('tickets').select('*').order(currentSort, { ascending: sortDir === 1 });
-            ticketsList = data || [];
-            renderTable(ticketsList);
-        }
-
-        function sortData(column) {
-            sortDir = (currentSort === column) ? sortDir * -1 : 1;
-            currentSort = column;
-            getTickets();
+            ticketsList = data || []; renderTable(ticketsList);
         }
 
         function renderTable(data) {
             const body = document.getElementById('tableBody'); body.innerHTML = '';
             data.forEach(t => {
-                const row = body.insertRow();
-                row.className = t.status === 'Used' ? 'row-used' : 'row-refund';
+                const row = body.insertRow(); row.className = t.status === 'Used' ? 'row-used' : 'row-refund';
                 if (selectedTicketId === t.id) row.classList.add('selected-row');
-                
-                row.innerHTML = `
-                    <td class="checkbox-cell" onclick="event.stopPropagation()"><input type="checkbox" class="export-check" data-id="${t.id}"></td>
-                    <td>${t.ticket_num}</td><td>${t.type}</td><td>${t.status}</td><td>${t.issue_date || '-'}</td><td>${t.issuer_name || '-'}</td><td>${t.processed_by}</td>
-                `;
+                row.innerHTML = `<td><input type="checkbox" class="export-check" data-id="${t.id}"></td><td>${t.ticket_num}</td><td>${t.type}</td><td>${t.status}</td><td>${t.issue_date || '-'}</td><td>${t.issuer_name || '-'}</td><td>${t.processed_by}</td>`;
                 row.onclick = () => {
                     selectedTicketId = t.id;
                     document.getElementById('ticketNum').value = t.ticket_num;
@@ -227,37 +196,23 @@ async function handleAuth() {
                     document.getElementById('refundDate').value = t.refund_date;
                     document.getElementById('refundBy').value = t.refund_by;
                     document.getElementById('refundReason').value = t.refund_reason;
-                    toggleDynamicFields();
-                    renderTable(data);
+                    toggleDynamicFields(); renderTable(data);
                 };
             });
         }
 
-        function toggleAllCheckboxes() {
-            const master = document.getElementById('selectAll').checked;
-            document.querySelectorAll('.export-check').forEach(cb => cb.checked = master);
-        }
+        function sortData(col) { sortDir = (currentSort === col) ? sortDir * -1 : 1; currentSort = col; getTickets(); }
+        function toggleAllCheckboxes() { const master = document.getElementById('selectAll').checked; document.querySelectorAll('.export-check').forEach(cb => cb.checked = master); }
 
         function exportSelectedToCSV() {
-            const selectedIds = Array.from(document.querySelectorAll('.export-check:checked')).map(cb => cb.getAttribute('data-id'));
-            if (selectedIds.length === 0) return alert("Select at least one ticket via checkboxes first.");
-            
-            const toExport = ticketsList.filter(t => selectedIds.includes(t.id.toString()));
-            let csv = "Ticket #,Type,Status,Issue Date,Issuer,Flight Date,Refund Date,Refund By,Processed By\n";
-            
-            toExport.forEach(t => {
-                csv += `${t.ticket_num},${t.type},${t.status},${t.issue_date},${t.issuer_name},${t.flight_date},${t.refund_date},${t.refund_by},${t.processed_by}\n`;
-            });
-
+            const ids = Array.from(document.querySelectorAll('.export-check:checked')).map(cb => cb.getAttribute('data-id'));
+            if (!ids.length) return alert("Select tickets first.");
+            const toExport = ticketsList.filter(t => ids.includes(t.id.toString()));
+            let csv = "Ticket #,Type,Status,Date,Issuer,Staff\n";
+            toExport.forEach(t => csv += `${t.ticket_num},${t.type},${t.status},${t.issue_date},${t.issuer_name},${t.processed_by}\n`);
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('hidden', '');
-            a.setAttribute('href', url);
-            a.setAttribute('download', `Saudia_Tickets_Export_${new Date().toLocaleDateString()}.csv`);
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            const a = document.createElement('a'); a.href = url; a.download = 'Saudia_Export.csv'; a.click();
         }
 
         async function saveTicket() {
@@ -275,8 +230,7 @@ async function handleAuth() {
                 refund_reason: document.getElementById('refundReason').value,
                 processed_by: activeProfile.full_name
             };
-            await saudiaClient.from('tickets').insert([payload]);
-            getTickets();
+            await saudiaClient.from('tickets').insert([payload]); getTickets();
         }
 
         async function updateTicket() {
@@ -292,17 +246,12 @@ async function handleAuth() {
                 refund_by: document.getElementById('refundBy').value,
                 refund_reason: document.getElementById('refundReason').value
             };
-            await saudiaClient.from('tickets').update(payload).eq('id', selectedTicketId);
-            getTickets();
+            await saudiaClient.from('tickets').update(payload).eq('id', selectedTicketId); getTickets();
         }
 
         async function deleteTicket() {
             if (confirm("Delete?")) await saudiaClient.from('tickets').delete().eq('id', selectedTicketId);
             getTickets();
-        }
-
-        function toggleAuthMode() {
-            document.getElementById('reg-extra').style.display = (document.getElementById('reg-extra').style.display === 'none') ? 'block' : 'none';
         }
 
         function filterTable() {
