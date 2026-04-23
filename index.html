@@ -3,28 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Saudia Airlines - Cloud TMS Pro Plus</title>
+    <title>Saudi Airline - Cloud TMS Pro Plus</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --saudia-green: #006C35; --saudia-gold: #8E713E; --used-bg: #D1F2EB; --refund-bg: #FADBD8; }
+        :root { 
+            --islamic-green: #009000; 
+            --saudia-gold: #8E713E; 
+            --flown-bg: #D1F2EB; 
+            --refund-bg: #FADBD8; 
+            --na-bg: #f0f0f0; 
+        }
         body { font-family: 'Times New Roman', serif; margin: 0; background-color: #f0f2f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        #login-screen { background: white; padding: 40px; border-radius: 4px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; width: 400px; border-top: 6px solid var(--saudia-green); }
+        
+        /* LOGIN SCREEN UPDATES */
+        #login-screen { background: white; padding: 40px; border-radius: 4px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; width: 400px; border-top: 6px solid var(--islamic-green); }
+        
         #main-app { display: none; width: 100%; max-width: 1200px; background: white; min-height: 90vh; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; margin: 20px; }
-        header { background-color: var(--saudia-green); color: white; padding: 20px; text-align: center; border-bottom: 4px solid var(--saudia-gold); position: relative; }
-        .user-info { position: absolute; right: 25px; top: 50%; transform: translateY(-50%); text-align: right; font-family: Arial; font-size: 0.85em; }
+        
+        /* HEADER STYLING - WHITE WITH GREEN & GOLD BORDERS */
+        header { 
+            background-color: #ffffff; 
+            padding: 15px 25px; 
+            border-top: 5px solid var(--islamic-green);
+            border-bottom: 4px solid var(--saudia-gold); 
+            display: flex; 
+            align-items: center; 
+            position: relative; 
+            min-height: 80px;
+        }
+        
+        .header-logo { 
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            height: 60px; 
+            width: auto; 
+            object-fit: contain; 
+        }
+
+        .header-title {
+            margin: 0 auto; /* Centers the text while logo is absolute */
+            color: var(--islamic-green);
+            letter-spacing: 3px;
+            font-size: 2.2em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .user-info { position: absolute; right: 25px; top: 50%; transform: translateY(-50%); text-align: right; font-family: Arial; font-size: 0.85em; color: #333; }
+        
+        /* REST OF UI */
         .container { padding: 30px; font-family: Arial, sans-serif; }
         input, select { width: 100%; padding: 10px; border: 1px solid #ccc; box-sizing: border-box; margin-bottom: 10px; border-radius: 4px; }
         .dynamic-section { background: #f9f9f9; padding: 15px; border-left: 4px solid var(--saudia-gold); margin-bottom: 15px; }
         .btn-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-        button { padding: 12px 20px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; color: white; border-radius: 4px; background: var(--saudia-green); transition: 0.3s; }
+        button { padding: 12px 20px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; color: white; border-radius: 4px; background: var(--islamic-green); transition: 0.3s; }
+        button:hover { filter: brightness(1.1); }
         .btn-update { background: var(--saudia-gold); display: none; }
         .btn-delete { background: #b22222; display: none; }
         .btn-export { background: #2e7d32; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
-        th { background: #f4f4f4; color: var(--saudia-green); text-align: left; padding: 12px; border-bottom: 2px solid var(--saudia-gold); cursor: pointer; }
+        th { background: #f4f4f4; color: var(--islamic-green); text-align: left; padding: 12px; border-bottom: 2px solid var(--saudia-gold); cursor: pointer; }
         td { padding: 10px; border-bottom: 1px solid #eee; }
-        .row-used { background-color: var(--used-bg); }
+        .row-flown { background-color: var(--flown-bg); }
         .row-refund { background-color: var(--refund-bg); }
+        .row-na { background-color: var(--na-bg); }
         .selected-row { outline: 2px solid var(--saudia-gold); }
         label { font-size: 11px; font-weight: bold; color: #555; display: block; margin-bottom: 2px; }
     </style>
@@ -32,7 +75,7 @@
 <body>
 
     <div id="login-screen">
-        <h1 style="color: var(--saudia-green); margin:0;">SAUDI AIRLINE</h1>
+        <h1 style="color: var(--islamic-green); margin:0;">SAUDI AIRLINE</h1>
         <p id="auth-title" style="color: var(--saudia-gold); font-weight: bold;">CLOUD TMS LOGIN</p>
         <div id="reg-extra" style="display:none;"><input type="text" id="reg-fullname" placeholder="Full Name"></div>
         <input type="text" id="email" placeholder="Username/Email">
@@ -43,41 +86,63 @@
 
     <div id="main-app">
         <header>
-            <h1 style="margin:0; letter-spacing: 5px;">SAUDI AIRLINE</h1>
+            <img src="D:\Documents\WORKS\Virtual Switch International\SaudiaTMS\Saudia_Logo.png" alt="Logo" class="header-logo" onerror="this.style.display='none'">
+            <h1 class="header-title">SAUDI AIRLINE</h1>
             <div class="user-info"><span id="display-name"></span> | <span style="cursor:pointer;" onclick="location.reload()">Logout</span></div>
         </header>
+
         <div class="container">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                 <div>
                     <label>Ticket Number</label>
-                    <input type="text" id="ticketNum" placeholder="065**********" maxlength="13">
+                    <input type="text" id="ticketNum" placeholder="13 Digits" maxlength="13">
                     <label>Ticket Type</label>
                     <select id="ticketType" onchange="toggleDynamicFields()">
                         <option value="Fresh Issued">Fresh Issued</option>
                         <option value="Re-issued">Re-issued</option>
                         <option value="Re-booked">Re-booked</option>
+                        <option value="N/A">N/A</option>
                     </select>
                     <label>Ticket Status</label>
                     <select id="ticketStatus" onchange="toggleDynamicFields()">
-                        <option value="Used">Used</option>
+                        <option value="Flown">Flown</option>
                         <option value="To be Refunded">To be Refunded</option>
+                        <option value="Refunded">Refunded</option>
                     </select>
                 </div>
                 <div>
                     <div id="dynamic-area" class="dynamic-section">
-                        <label id="dateLabel">Date of Issue</label>
-                        <input type="date" id="issueDate">
-                        <label>Name of Issuer</label>
-                        <input type="text" id="issuerName">
+                        <div id="issue-info">
+                            <label id="dateLabel">Date of Issue</label>
+                            <input type="date" id="issueDate">
+                            <label>Name of Issuer</label>
+                            <input type="text" id="issuerName">
+                        </div>
                         <div id="reason-box" style="display:none;">
                             <label id="reasonLabel">Reason</label>
                             <input type="text" id="extraReason">
                         </div>
-                        <div id="flight-box"><label>Date of Flight</label><input type="date" id="flightDate"></div>
+                        <div id="flown-box">
+                            <label>Date of Flight</label>
+                            <input type="date" id="flightDate">
+                        </div>
                         <div id="refund-box" style="display:none;">
-                            <label>Date of Refund</label><input type="date" id="refundDate">
-                            <label>Refunded By</label><input type="text" id="refundBy">
-                            <label>Reason for Refund</label><input type="text" id="refundReason">
+                            <label>Date of Refund</label>
+                            <input type="date" id="refundDate">
+                            <label>Refunded By</label>
+                            <input type="text" id="refundBy">
+                            <label>Reason for Refund</label>
+                            <input type="text" id="refundReason">
+                            <div id="refund-ext-box" style="display:none;">
+                                <label>Recipient</label>
+                                <input type="text" id="refundRecipient">
+                                <label>Mode of Refund</label>
+                                <select id="refundMode">
+                                    <option value="Cash">Cash</option>
+                                    <option value="Transfer">Transfer</option>
+                                    <option value="Cheque">Cheque</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -88,7 +153,7 @@
                 <button id="admin-del" class="btn-delete" onclick="deleteTicket()">Delete Selected</button>
                 <button class="btn-export" onclick="exportSelectedToCSV()">Export Selected to CSV</button>
             </div>
-            <input type="text" id="search" placeholder="Search..." onkeyup="filterTable()" style="margin-top:20px;">
+            <input type="text" id="search" placeholder="Search ticket numbers..." onkeyup="filterTable()" style="margin-top:20px;">
             <table>
                 <thead>
                     <tr>
@@ -107,7 +172,7 @@
     </div>
 
     <script>
-         const SAUDIA_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
+       const SAUDIA_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
         const SAUDIA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
         const saudiaClient = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY);
 
@@ -119,17 +184,10 @@
             const btn = document.getElementById('main-auth-btn');
             const title = document.getElementById('auth-title');
             const toggle = document.getElementById('auth-toggle');
-
             if (isRegMode) {
-                extra.style.display = 'block';
-                title.innerText = "CREATE ACCOUNT";
-                btn.innerText = "REGISTER ACCOUNT";
-                toggle.innerText = "Already have an account? Sign In";
+                extra.style.display = 'block'; title.innerText = "CREATE ACCOUNT"; btn.innerText = "REGISTER ACCOUNT"; toggle.innerText = "Back to Login";
             } else {
-                extra.style.display = 'none';
-                title.innerText = "CLOUD TMS LOGIN";
-                btn.innerText = "SIGN IN";
-                toggle.innerText = "New User? Create Account";
+                extra.style.display = 'none'; title.innerText = "CLOUD TMS LOGIN"; btn.innerText = "SIGN IN"; toggle.innerText = "New User? Create Account";
             }
         }
 
@@ -137,7 +195,6 @@
             const emailIn = document.getElementById('email').value.trim();
             const email = emailIn.includes('@') ? emailIn : emailIn + "@saudia-tms.com";
             const password = document.getElementById('password').value;
-
             if (isRegMode) {
                 const name = document.getElementById('reg-fullname').value;
                 const { data, error } = await saudiaClient.auth.signUp({ email, password, options: { data: { full_name: name } } });
@@ -167,10 +224,11 @@
         function toggleDynamicFields() {
             const type = document.getElementById('ticketType').value;
             const status = document.getElementById('ticketStatus').value;
-            document.getElementById('dateLabel').innerText = "Date of " + type.replace('Issued', 'Issue').replace('Re-issued', 'Re-issue').replace('Re-booked', 'Re-book');
-            document.getElementById('reason-box').style.display = (type === "Fresh Issued") ? "none" : "block";
-            document.getElementById('flight-box').style.display = (status === "Used") ? "block" : "none";
-            document.getElementById('refund-box').style.display = (status === "Used") ? "none" : "block";
+            document.getElementById('dateLabel').innerText = "Date of " + (type === "N/A" ? "Issue" : type.replace('Issued', 'Issue').replace('Re-issued', 'Re-issue').replace('Re-booked', 'Re-book'));
+            document.getElementById('reason-box').style.display = (type === "Fresh Issued" || type === "N/A") ? "none" : "block";
+            document.getElementById('flown-box').style.display = (status === "Flown") ? "block" : "none";
+            document.getElementById('refund-box').style.display = (status === "Flown") ? "none" : "block";
+            document.getElementById('refund-ext-box').style.display = (status === "Refunded") ? "block" : "none";
         }
 
         async function getTickets() {
@@ -181,7 +239,11 @@
         function renderTable(data) {
             const body = document.getElementById('tableBody'); body.innerHTML = '';
             data.forEach(t => {
-                const row = body.insertRow(); row.className = t.status === 'Used' ? 'row-used' : 'row-refund';
+                const row = body.insertRow();
+                let rowClass = 'row-na';
+                if(t.status === 'Flown') rowClass = 'row-flown';
+                if(t.status === 'Refunded' || t.status === 'To be Refunded') rowClass = 'row-refund';
+                row.className = rowClass;
                 if (selectedTicketId === t.id) row.classList.add('selected-row');
                 row.innerHTML = `<td><input type="checkbox" class="export-check" data-id="${t.id}"></td><td>${t.ticket_num}</td><td>${t.type}</td><td>${t.status}</td><td>${t.issue_date || '-'}</td><td>${t.issuer_name || '-'}</td><td>${t.processed_by}</td>`;
                 row.onclick = () => {
@@ -196,6 +258,8 @@
                     document.getElementById('refundDate').value = t.refund_date;
                     document.getElementById('refundBy').value = t.refund_by;
                     document.getElementById('refundReason').value = t.refund_reason;
+                    document.getElementById('refundRecipient').value = t.refund_recipient || "";
+                    document.getElementById('refundMode').value = t.refund_mode || "Cash";
                     toggleDynamicFields(); renderTable(data);
                 };
             });
@@ -208,11 +272,11 @@
             const ids = Array.from(document.querySelectorAll('.export-check:checked')).map(cb => cb.getAttribute('data-id'));
             if (!ids.length) return alert("Select tickets first.");
             const toExport = ticketsList.filter(t => ids.includes(t.id.toString()));
-            let csv = "Ticket #,Type,Status,Date,Issuer,Staff\n";
-            toExport.forEach(t => csv += `${t.ticket_num},${t.type},${t.status},${t.issue_date},${t.issuer_name},${t.processed_by}\n`);
+            let csv = "Ticket #,Type,Status,Date,Issuer,Flown Date,Refund Date,Refund Recipient,Refund Mode,Staff\n";
+            toExport.forEach(t => csv += `${t.ticket_num},${t.type},${t.status},${t.issue_date},${t.issuer_name},${t.flight_date},${t.refund_date},${t.refund_recipient},${t.refund_mode},${t.processed_by}\n`);
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'Saudia_Export.csv'; a.click();
+            const a = document.createElement('a'); a.href = url; a.download = 'Saudi_Airline_Export.csv'; a.click();
         }
 
         async function saveTicket() {
@@ -228,12 +292,16 @@
                 refund_date: document.getElementById('refundDate').value || null,
                 refund_by: document.getElementById('refundBy').value,
                 refund_reason: document.getElementById('refundReason').value,
+                refund_recipient: document.getElementById('refundRecipient').value,
+                refund_mode: document.getElementById('refundMode').value,
                 processed_by: activeProfile.full_name
             };
-            await saudiaClient.from('tickets').insert([payload]); getTickets();
+            const { error } = await saudiaClient.from('tickets').insert([payload]);
+            if (error) alert(error.message); else getTickets();
         }
 
         async function updateTicket() {
+            if(!selectedTicketId) return alert("Select a ticket first.");
             const payload = {
                 type: document.getElementById('ticketType').value,
                 status: document.getElementById('ticketStatus').value,
@@ -244,14 +312,19 @@
                 flight_date: document.getElementById('flightDate').value || null,
                 refund_date: document.getElementById('refundDate').value || null,
                 refund_by: document.getElementById('refundBy').value,
-                refund_reason: document.getElementById('refundReason').value
+                refund_reason: document.getElementById('refundReason').value,
+                refund_recipient: document.getElementById('refundRecipient').value,
+                refund_mode: document.getElementById('refundMode').value
             };
-            await saudiaClient.from('tickets').update(payload).eq('id', selectedTicketId); getTickets();
+            const { error } = await saudiaClient.from('tickets').update(payload).eq('id', selectedTicketId);
+            if (error) alert(error.message); else getTickets();
         }
 
         async function deleteTicket() {
-            if (confirm("Delete?")) await saudiaClient.from('tickets').delete().eq('id', selectedTicketId);
-            getTickets();
+            if (confirm("Delete this ticket?")) {
+                await saudiaClient.from('tickets').delete().eq('id', selectedTicketId);
+                getTickets();
+            }
         }
 
         function filterTable() {
