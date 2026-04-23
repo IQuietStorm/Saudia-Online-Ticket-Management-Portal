@@ -119,6 +119,7 @@
         const SAUDIA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
         const saudiaClient = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY);
         let activeUser, activeProfile, ticketsList = [], selectedTicketId = null, sortDir = 1, currentSort = 'created_at';
+        let isRegMode = false;
 
         function toggleDynamicFields() {
             const type = document.getElementById('ticketType').value;
