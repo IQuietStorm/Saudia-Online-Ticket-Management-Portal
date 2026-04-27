@@ -110,8 +110,6 @@
                         <option value="Flown">Flown</option>
                         <option value="To be Refunded">To be Refunded</option>
                         <option value="Refunded">Refunded</option>
-                        <option value="Re-issued">Re-issued</option>
-                        <option value="Re-booked">Re-booked</option>
                         <option value="N/A">N/A</option>
                     </select>
                 </div>
@@ -128,7 +126,7 @@
                             <input type="text" id="extraReason">
                         </div>
                         <div id="status-comment-box" style="display:none;">
-                            <label>Status Comment</label>
+                            <label>Ticket Comment</label>
                             <input type="text" id="statusComment" placeholder="Details for Re-issue/Re-book">
                         </div>
                         <div id="flown-box">
@@ -181,7 +179,6 @@
     </div>
 
     <script>
-        // UPDATED SUPABASE DETAILS
         const SAUDIA_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
         const SAUDIA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
         const saudiaClient = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY);
@@ -235,10 +232,15 @@
             const type = document.getElementById('ticketType').value;
             const status = document.getElementById('ticketStatus').value;
             
+            // TYPE LOGIC
             document.getElementById('dateLabel').innerText = "Date of " + type.replace('Issued', 'Issue').replace('Re-issued', 'Re-issue').replace('Re-booked', 'Re-book');
-            document.getElementById('reason-box').style.display = (type === "Fresh Issued") ? "none" : "block";
-            document.getElementById('status-comment-box').style.display = (status === "Re-issued" || status === "Re-booked") ? "block" : "none";
+            
+            // Show Reason and Comment box if Type is Re-issued or Re-booked
+            const showExtra = (type === "Re-issued" || type === "Re-booked");
+            document.getElementById('reason-box').style.display = showExtra ? "block" : "none";
+            document.getElementById('status-comment-box').style.display = showExtra ? "block" : "none";
 
+            // STATUS LOGIC
             document.getElementById('flown-box').style.display = (status === "Flown") ? "block" : "none";
             document.getElementById('refund-box').style.display = (status === "Refunded" || status === "To be Refunded") ? "block" : "none";
             document.getElementById('refund-ext-box').style.display = (status === "Refunded") ? "block" : "none";
