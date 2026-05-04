@@ -269,7 +269,7 @@
                     <button id="theme-toggle" class="mini-btn" onclick="toggleTheme()">Night Mode</button>
                     <button id="layout-toggle" class="mini-btn alt" onclick="toggleLayout()">Mobile View</button>
                 </div>
-                <div class="user-info"><span id="display-name"></span> | <span style="cursor:pointer; font-weight:bold;" onclick="location.reload()">Logout</span></div>
+                <div class="user-info"><span id="display-name"></span> | <span style="cursor:pointer; font-weight:bold;" onclick="logout()">Logout</span></div>
             </div>
         </header>
 
@@ -435,6 +435,26 @@
 
         let activeUser, activeProfile, ticketsList = [], selectedTicketId = null, isRegMode = false;
         let visibleTickets = [];
+
+        async function initAuth() {
+            const { data, error } = await saudiaClient.auth.getSession();
+            if (!error && data?.session?.user) {
+                activeUser = data.session.user;
+                loadApp();
+                return;
+            }
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('main-app').style.display = 'none';
+        }
+
+        async function logout() {
+            await saudiaClient.auth.signOut();
+            activeUser = null;
+            activeProfile = null;
+            selectedTicketId = null;
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+        }
 
         function applyUiPrefs() {
             const theme = localStorage.getItem('tms_theme') || 'light';
@@ -740,6 +760,7 @@
         }
 
         applyUiPrefs();
+        initAuth();
     </script>
 </body>
 </html>
