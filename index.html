@@ -196,6 +196,25 @@
         /* MOBILE RESPONSIVE GRID */
         .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
+        /* FILTER + SORT BAR */
+        .filter-bar {
+            margin-top: 18px;
+            padding: 14px;
+            border-radius: var(--radius-2);
+            background: var(--surface-2);
+            border: 1px solid rgba(0,0,0,0.06);
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr 1fr;
+            gap: 12px;
+            align-items: end;
+        }
+        [data-theme="dark"] .filter-bar { border-color: rgba(255,255,255,0.08); }
+        .filter-item label { margin-bottom: 6px; }
+        .filter-item input, .filter-item select { margin-bottom: 0; }
+        .filter-actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+        .filter-actions .mini-btn { padding: 10px 12px; font-size: 11px; }
+        .muted { color: var(--muted-text); font-size: 12px; }
+
         @media (max-width: 768px) {
             .input-grid { grid-template-columns: 1fr; }
             .header-title { font-size: 1.2em; order: 3; width: 100%; margin-top: 10px; }
@@ -205,6 +224,9 @@
             .container { padding: 16px; }
             button { width: 100%; justify-content: center; }
             .btn-row { gap: 8px; }
+            .filter-bar { grid-template-columns: 1fr; }
+            .filter-actions { justify-content: stretch; }
+            .filter-actions .mini-btn { width: 100%; }
         }
 
         /* MANUAL "MOBILE VIEW" TOGGLE (forces compact layout) */
@@ -213,6 +235,7 @@
         [data-layout="mobile"] .container { padding: 16px; }
         [data-layout="mobile"] header { justify-content: space-between; }
         [data-layout="mobile"] .header-title { font-size: 1.2em; order: 3; width: 100%; margin-top: 10px; }
+        [data-layout="mobile"] .filter-bar { grid-template-columns: 1fr; }
     </style>
 </head>
 <body>
@@ -290,10 +313,21 @@
                             <input type="date" id="flightDate">
                         </div>
                         <div id="refund-box" style="display:none;">
-                            <label>Date of Refund</label>
-                            <input type="date" id="refundDate">
+                            <div id="refunded-only-box" style="display:none;">
+                                <label>Refund Recipient</label>
+                                <input type="text" id="refundRecipient" placeholder="Customer / Recipient name">
+                                <label>Date of Refund</label>
+                                <input type="date" id="refundDate">
+                                <label>Mode of Refund</label>
+                                <select id="refundMode">
+                                    <option value="">Select mode...</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Transfer">Transfer</option>
+                                    <option value="Cheque">Cheque</option>
+                                </select>
+                            </div>
                             <label>Refunded By</label>
-                            <input type="text" id="refundBy">
+                            <input type="text" id="refundBy" placeholder="Staff name">
                             <label>Reason for Refund</label>
                             <input type="text" id="refundReason">
                         </div>
@@ -307,7 +341,74 @@
                 <button style="background:#2e7d32" onclick="exportSelectedToCSV()">Export CSV</button>
             </div>
             
-            <input type="text" id="search" placeholder="Search ticket numbers..." onkeyup="filterTable()" style="margin-top:20px;">
+            <div class="filter-bar">
+                <div class="filter-item" style="grid-column: span 2;">
+                    <label>Search</label>
+                    <input type="text" id="search" placeholder="Search ticket numbers..." oninput="applyFiltersAndSort()">
+                    <div id="result-meta" class="muted" style="margin-top:6px;"></div>
+                </div>
+
+                <div class="filter-item">
+                    <label>Status</label>
+                    <select id="filterStatus" onchange="applyFiltersAndSort()">
+                        <option value="">All</option>
+                        <option value="Flown">Flown</option>
+                        <option value="To be Refunded">To be Refunded</option>
+                        <option value="Refunded">Refunded</option>
+                        <option value="N/A">N/A</option>
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <label>Type</label>
+                    <select id="filterType" onchange="applyFiltersAndSort()">
+                        <option value="">All</option>
+                        <option value="Fresh Issued">Fresh Issued</option>
+                        <option value="Re-issued">Re-issued</option>
+                        <option value="Re-booked">Re-booked</option>
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <label>Staff</label>
+                    <select id="filterStaff" onchange="applyFiltersAndSort()">
+                        <option value="">All</option>
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <label>Date From</label>
+                    <input type="date" id="filterDateFrom" onchange="applyFiltersAndSort()">
+                </div>
+
+                <div class="filter-item">
+                    <label>Date To</label>
+                    <input type="date" id="filterDateTo" onchange="applyFiltersAndSort()">
+                </div>
+
+                <div class="filter-item">
+                    <label>Sort by</label>
+                    <select id="sortBy" onchange="applyFiltersAndSort()">
+                        <option value="created_at">Created (default)</option>
+                        <option value="issue_date">Date</option>
+                        <option value="status">Ticket Status</option>
+                        <option value="type">Ticket Type</option>
+                        <option value="processed_by">Staff</option>
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <label>Order</label>
+                    <select id="sortDir" onchange="applyFiltersAndSort()">
+                        <option value="desc">Descending</option>
+                        <option value="asc">Ascending</option>
+                    </select>
+                </div>
+
+                <div class="filter-actions" style="grid-column: span 2;">
+                    <button class="mini-btn" onclick="resetFilters()">Reset filters</button>
+                </div>
+            </div>
             
             <div class="table-wrap">
                 <table>
@@ -333,6 +434,7 @@
         const saudiaClient = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY);
 
         let activeUser, activeProfile, ticketsList = [], selectedTicketId = null, isRegMode = false;
+        let visibleTickets = [];
 
         function applyUiPrefs() {
             const theme = localStorage.getItem('tms_theme') || 'light';
@@ -410,11 +512,103 @@
             document.getElementById('status-comment-box').style.display = showExtra ? "block" : "none";
             document.getElementById('flown-box').style.display = (status === "Flown") ? "block" : "none";
             document.getElementById('refund-box').style.display = (status === "Refunded" || status === "To be Refunded") ? "block" : "none";
+            document.getElementById('refunded-only-box').style.display = (status === "Refunded") ? "block" : "none";
         }
 
         async function getTickets() {
             const { data } = await saudiaClient.from('tickets').select('*').order('created_at', { ascending: false });
-            ticketsList = data || []; renderTable(ticketsList);
+            ticketsList = data || [];
+            populateStaffFilterOptions();
+            applyFiltersAndSort();
+        }
+
+        function populateStaffFilterOptions() {
+            const staffSel = document.getElementById('filterStaff');
+            if (!staffSel) return;
+
+            const current = staffSel.value || "";
+            const unique = Array.from(new Set((ticketsList || []).map(t => (t.processed_by || '').trim()).filter(Boolean)))
+                .sort((a, b) => a.localeCompare(b));
+
+            staffSel.innerHTML = `<option value="">All</option>` + unique.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
+            staffSel.value = unique.includes(current) ? current : "";
+        }
+
+        function applyFiltersAndSort() {
+            const q = (document.getElementById('search')?.value || '').trim().toLowerCase();
+            const fStatus = document.getElementById('filterStatus')?.value || '';
+            const fType = document.getElementById('filterType')?.value || '';
+            const fStaff = document.getElementById('filterStaff')?.value || '';
+            const dateFrom = document.getElementById('filterDateFrom')?.value || '';
+            const dateTo = document.getElementById('filterDateTo')?.value || '';
+            const sortBy = document.getElementById('sortBy')?.value || 'created_at';
+            const sortDir = document.getElementById('sortDir')?.value || 'desc';
+
+            const fromTs = dateFrom ? Date.parse(dateFrom + 'T00:00:00') : null;
+            const toTs = dateTo ? Date.parse(dateTo + 'T23:59:59') : null;
+
+            visibleTickets = (ticketsList || []).filter(t => {
+                if (q && !(String(t.ticket_num || '').toLowerCase().includes(q))) return false;
+                if (fStatus && t.status !== fStatus) return false;
+                if (fType && t.type !== fType) return false;
+                if (fStaff && (t.processed_by || '') !== fStaff) return false;
+
+                const issue = t.issue_date ? Date.parse(t.issue_date + 'T00:00:00') : null;
+                if (fromTs && (!issue || issue < fromTs)) return false;
+                if (toTs && (!issue || issue > toTs)) return false;
+                return true;
+            });
+
+            const dir = sortDir === 'asc' ? 1 : -1;
+            visibleTickets.sort((a, b) => dir * compareTickets(a, b, sortBy));
+
+            renderTable(visibleTickets);
+            updateResultMeta();
+        }
+
+        function compareTickets(a, b, sortBy) {
+            if (sortBy === 'issue_date') {
+                const ad = a.issue_date ? Date.parse(a.issue_date + 'T00:00:00') : 0;
+                const bd = b.issue_date ? Date.parse(b.issue_date + 'T00:00:00') : 0;
+                return ad - bd;
+            }
+            if (sortBy === 'created_at') {
+                const ad = a.created_at ? Date.parse(a.created_at) : 0;
+                const bd = b.created_at ? Date.parse(b.created_at) : 0;
+                return ad - bd;
+            }
+            if (sortBy === 'status') return String(a.status || '').localeCompare(String(b.status || ''));
+            if (sortBy === 'type') return String(a.type || '').localeCompare(String(b.type || ''));
+            if (sortBy === 'processed_by') return String(a.processed_by || '').localeCompare(String(b.processed_by || ''));
+            return 0;
+        }
+
+        function updateResultMeta() {
+            const el = document.getElementById('result-meta');
+            if (!el) return;
+            const total = (ticketsList || []).length;
+            const shown = (visibleTickets || []).length;
+            el.textContent = `Showing ${shown} of ${total}`;
+        }
+
+        function resetFilters() {
+            const ids = ['search', 'filterStatus', 'filterType', 'filterStaff', 'filterDateFrom', 'filterDateTo', 'sortBy', 'sortDir'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (el.tagName === 'SELECT') el.value = (id === 'sortBy' ? 'created_at' : (id === 'sortDir' ? 'desc' : ''));
+                else el.value = '';
+            });
+            applyFiltersAndSort();
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
         function renderTable(data) {
@@ -427,6 +621,7 @@
                 row.className = cls;
                 row.innerHTML = `<td><input type="checkbox" class="export-check" data-id="${t.id}"></td><td>${t.ticket_num}</td><td>${t.type}</td><td>${t.status}</td><td>${t.issue_date || '-'}</td><td>${t.processed_by}</td>`;
                 row.onclick = (e) => { if(e.target.type !== 'checkbox') selectTicket(t, row); };
+                if (selectedTicketId && t.id === selectedTicketId) row.classList.add('is-selected');
             });
         }
 
@@ -437,6 +632,16 @@
             document.getElementById('ticketStatus').value = t.status;
             document.getElementById('issueDate').value = t.issue_date;
             document.getElementById('statusComment').value = t.status_comment || "";
+            const refundRecipient = document.getElementById('refundRecipient');
+            if (refundRecipient) refundRecipient.value = t.refund_recipient || "";
+            const refundDate = document.getElementById('refundDate');
+            if (refundDate) refundDate.value = t.refund_date || "";
+            const refundMode = document.getElementById('refundMode');
+            if (refundMode) refundMode.value = t.refund_mode || "";
+            const refundBy = document.getElementById('refundBy');
+            if (refundBy) refundBy.value = t.refund_by || "";
+            const refundReason = document.getElementById('refundReason');
+            if (refundReason) refundReason.value = t.refund_reason || "";
             toggleDynamicFields();
 
             document.querySelectorAll('#tableBody tr.is-selected').forEach(el => el.classList.remove('is-selected'));
@@ -452,6 +657,17 @@
                 status_comment: document.getElementById('statusComment').value,
                 processed_by: activeProfile.full_name
             };
+            // Add refund fields only when relevant (won't harm UI if DB doesn't have columns;
+            // if your Supabase table has these columns, they’ll be saved).
+            if (payload.status === "Refunded" || payload.status === "To be Refunded") {
+                payload.refund_by = document.getElementById('refundBy')?.value || null;
+                payload.refund_reason = document.getElementById('refundReason')?.value || null;
+            }
+            if (payload.status === "Refunded") {
+                payload.refund_recipient = document.getElementById('refundRecipient')?.value || null;
+                payload.refund_date = document.getElementById('refundDate')?.value || null;
+                payload.refund_mode = document.getElementById('refundMode')?.value || null;
+            }
             await saudiaClient.from('tickets').insert([payload]);
             getTickets();
         }
