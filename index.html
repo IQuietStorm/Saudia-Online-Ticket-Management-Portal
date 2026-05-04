@@ -649,8 +649,12 @@
         }
 
         async function saveTicket() {
+            const rawTicketNum = (document.getElementById('ticketNum').value || '').trim();
+            if (!rawTicketNum) return alert("Ticket Number is required.");
+            if (!/^\d{13}$/.test(rawTicketNum)) return alert("Ticket Number must be exactly 13 digits.");
+
             const payload = {
-                ticket_num: document.getElementById('ticketNum').value,
+                ticket_num: rawTicketNum,
                 type: document.getElementById('ticketType').value,
                 status: document.getElementById('ticketStatus').value,
                 issue_date: document.getElementById('issueDate').value || null,
@@ -670,6 +674,59 @@
             }
             await saudiaClient.from('tickets').insert([payload]);
             getTickets();
+        }
+
+        async function updateTicket() {
+            if (!activeProfile || activeProfile.role !== 'admin') return alert("Admin only.");
+            if (!selectedTicketId) return alert("Select a ticket row first.");
+
+            const rawTicketNum = (document.getElementById('ticketNum').value || '').trim();
+            if (!rawTicketNum) return alert("Ticket Number is required.");
+            if (!/^\d{13}$/.test(rawTicketNum)) return alert("Ticket Number must be exactly 13 digits.");
+
+            const payload = {
+                ticket_num: rawTicketNum,
+                type: document.getElementById('ticketType').value,
+                status: document.getElementById('ticketStatus').value,
+                issue_date: document.getElementById('issueDate').value || null,
+                status_comment: document.getElementById('statusComment').value,
+                processed_by: activeProfile.full_name
+            };
+
+            if (payload.status === "Refunded" || payload.status === "To be Refunded") {
+                payload.refund_by = document.getElementById('refundBy')?.value || null;
+                payload.refund_reason = document.getElementById('refundReason')?.value || null;
+            } else {
+                payload.refund_by = null;
+                payload.refund_reason = null;
+            }
+
+            if (payload.status === "Refunded") {
+                payload.refund_recipient = document.getElementById('refundRecipient')?.value || null;
+                payload.refund_date = document.getElementById('refundDate')?.value || null;
+                payload.refund_mode = document.getElementById('refundMode')?.value || null;
+            } else {
+                payload.refund_recipient = null;
+                payload.refund_date = null;
+                payload.refund_mode = null;
+            }
+
+            const { error } = await saudiaClient.from('tickets').update(payload).eq('id', selectedTicketId);
+            if (error) return alert(error.message);
+            await getTickets();
+        }
+
+        async function deleteTicket() {
+            if (!activeProfile || activeProfile.role !== 'admin') return alert("Admin only.");
+            if (!selectedTicketId) return alert("Select a ticket row first.");
+            if (!confirm("Delete this ticket permanently?")) return;
+
+            const { error } = await saudiaClient.from('tickets').delete().eq('id', selectedTicketId);
+            if (error) return alert(error.message);
+
+            selectedTicketId = null;
+            document.querySelectorAll('#tableBody tr.is-selected').forEach(el => el.classList.remove('is-selected'));
+            await getTickets();
         }
 
         function toggleAllCheckboxes() {
