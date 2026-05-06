@@ -280,6 +280,9 @@
                     <input type="text" id="ticketNum" placeholder="065**********" maxlength="13">
                     <label>Ticket Type</label>
                     <select id="ticketType" onchange="toggleDynamicFields()">
+                        <option value="Fresh Issue">Fresh Issue</option>
+                        <option value="Re-issue">Re-issue</option>
+                        <option value="Re-booked">Re-booked</option>
                         <option value="Upgrade">Upgrade</option>
                         <option value="Downgrade">Downgrade</option>
                     </select>
@@ -362,6 +365,9 @@
                     <label>Type</label>
                     <select id="filterType" onchange="applyFiltersAndSort()">
                         <option value="">All</option>
+                        <option value="Fresh Issue">Fresh Issue</option>
+                        <option value="Re-issue">Re-issue</option>
+                        <option value="Re-booked">Re-booked</option>
                         <option value="Upgrade">Upgrade</option>
                         <option value="Downgrade">Downgrade</option>
                     </select>
@@ -526,14 +532,14 @@
             const status = document.getElementById('ticketStatus').value;
             
             // Show reason box for types that need it
-            const showReason = (type === "Upgrade" || type === "Downgrade" || type === "Re-issued" || type === "Re-booked");
+            const showReason = (type === "Upgrade" || type === "Downgrade" || type === "Re-issue" || type === "Re-booked");
             document.getElementById('reason-box').style.display = showReason ? "block" : "none";
             
             // Update label based on type
             const reasonLabel = document.getElementById('reasonLabel');
             if (type === "Upgrade") reasonLabel.innerText = "Reason for upgrade";
             else if (type === "Downgrade") reasonLabel.innerText = "Reason for downgrade";
-            else if (type === "Re-issued" || type === "Re-booked") reasonLabel.innerText = "Type Reason";
+            else if (type === "Re-issue" || type === "Re-booked") reasonLabel.innerText = "Type Reason";
             
             document.getElementById('flown-box').style.display = (status === "Flown") ? "block" : "none";
             document.getElementById('refund-box').style.display = (status === "Refunded" || status === "To be Refunded") ? "block" : "none";
@@ -663,7 +669,8 @@
             let reason = "";
             if (t.type === "Upgrade") reason = t.upgrade_reason;
             else if (t.type === "Downgrade") reason = t.downgrade_reason;
-            else reason = t.reissue_reason || t.rebook_reason;
+            else if (t.type === "Re-issue") reason = t.reissue_reason;
+            else if (t.type === "Re-booked") reason = t.rebook_reason;
             
             document.getElementById('extraReason').value = reason || "";
             
@@ -701,7 +708,8 @@
                 processed_by: activeProfile.full_name,
                 
                 // Logic to route the reason to the specific column
-                reissue_reason: (type === "Re-issued" || type === "Re-booked") ? reasonValue : null,
+                reissue_reason: (type === "Re-issue") ? reasonValue : null,
+                rebook_reason: (type === "Re-booked") ? reasonValue : null,
                 upgrade_reason: (type === "Upgrade") ? reasonValue : null,
                 downgrade_reason: (type === "Downgrade") ? reasonValue : null
             };
@@ -718,7 +726,17 @@
             }
             
             const { error } = await saudiaClient.from('tickets').insert([payload]);
-            if (error) alert(error.message); else getTickets();
+            if (error) alert(error.message); else {
+                alert('Ticket saved successfully!');
+                document.getElementById('ticketNum').value = '';
+                document.getElementById('ticketType').value = 'Fresh Issue';
+                document.getElementById('ticketStatus').value = 'Flown';
+                document.getElementById('issueDate').value = '';
+                document.getElementById('extraReason').value = '';
+                document.getElementById('statusComment').value = '';
+                toggleDynamicFields();
+                getTickets();
+            }
         }
 
         async function updateTicket() {
@@ -741,7 +759,8 @@
                 processed_by: activeProfile.full_name,
                 
                 // Logic to route the reason to the specific column
-                reissue_reason: (type === "Re-issued" || type === "Re-booked") ? reasonValue : null,
+                reissue_reason: (type === "Re-issue") ? reasonValue : null,
+                rebook_reason: (type === "Re-booked") ? reasonValue : null,
                 upgrade_reason: (type === "Upgrade") ? reasonValue : null,
                 downgrade_reason: (type === "Downgrade") ? reasonValue : null
             };
@@ -766,6 +785,7 @@
 
             const { error } = await saudiaClient.from('tickets').update(payload).eq('id', selectedTicketId);
             if (error) return alert(error.message);
+            alert('Ticket updated successfully!');
             await getTickets();
         }
 
@@ -776,6 +796,7 @@
 
             const { error } = await saudiaClient.from('tickets').delete().eq('id', selectedTicketId);
             if (error) return alert(error.message);
+            alert('Ticket deleted successfully!');
 
             selectedTicketId = null;
             document.querySelectorAll('#tableBody tr.is-selected').forEach(el => el.classList.remove('is-selected'));
