@@ -280,9 +280,8 @@
                     <input type="text" id="ticketNum" placeholder="065**********" maxlength="13">
                     <label>Ticket Type</label>
                     <select id="ticketType" onchange="toggleDynamicFields()">
-                        <option value="Fresh Issued">Fresh Issued</option>
-                        <option value="Re-issued">Re-issued</option>
-                        <option value="Re-booked">Re-booked</option>
+                        <option value="Upgrade">Upgrade</option>
+                        <option value="Downgrade">Downgrade</option>
                     </select>
                     <label>Ticket Status</label>
                     <select id="ticketStatus" onchange="toggleDynamicFields()">
@@ -301,12 +300,12 @@
                             <input type="text" id="issuerName">
                         </div>
                         <div id="reason-box" style="display:none;">
-                            <label id="reasonLabel">Type Reason</label>
-                            <input type="text" id="extraReason">
+                            <label id="reasonLabel">Reason</label>
+                            <input type="text" id="extraReason" placeholder="Enter reason">
                         </div>
                         <div id="status-comment-box" style="display:none;">
                             <label>Ticket Comment</label>
-                            <input type="text" id="statusComment" placeholder="Details for Re-issue/Re-book">
+                            <input type="text" id="statusComment" placeholder="Additional details">
                         </div>
                         <div id="flown-box">
                             <label>Date of Flight</label>
@@ -363,9 +362,8 @@
                     <label>Type</label>
                     <select id="filterType" onchange="applyFiltersAndSort()">
                         <option value="">All</option>
-                        <option value="Fresh Issued">Fresh Issued</option>
-                        <option value="Re-issued">Re-issued</option>
-                        <option value="Re-booked">Re-booked</option>
+                        <option value="Upgrade">Upgrade</option>
+                        <option value="Downgrade">Downgrade</option>
                     </select>
                 </div>
 
@@ -526,10 +524,17 @@
         function toggleDynamicFields() {
             const type = document.getElementById('ticketType').value;
             const status = document.getElementById('ticketStatus').value;
-            const showExtra = (type === "Re-issued" || type === "Re-booked");
             
-            document.getElementById('reason-box').style.display = showExtra ? "block" : "none";
-            document.getElementById('status-comment-box').style.display = showExtra ? "block" : "none";
+            // Show reason box for types that need it
+            const showReason = (type === "Upgrade" || type === "Downgrade" || type === "Re-issued" || type === "Re-booked");
+            document.getElementById('reason-box').style.display = showReason ? "block" : "none";
+            
+            // Update label based on type
+            const reasonLabel = document.getElementById('reasonLabel');
+            if (type === "Upgrade") reasonLabel.innerText = "Reason for upgrade";
+            else if (type === "Downgrade") reasonLabel.innerText = "Reason for downgrade";
+            else if (type === "Re-issued" || type === "Re-booked") reasonLabel.innerText = "Type Reason";
+            
             document.getElementById('flown-box').style.display = (status === "Flown") ? "block" : "none";
             document.getElementById('refund-box').style.display = (status === "Refunded" || status === "To be Refunded") ? "block" : "none";
             document.getElementById('refunded-only-box').style.display = (status === "Refunded") ? "block" : "none";
@@ -645,6 +650,7 @@
             });
         }
 
+        // Function to retrieve data back into the form when a row is clicked
         function selectTicket(t, rowEl) {
             selectedTicketId = t.id;
             document.getElementById('ticketNum').value = t.ticket_num;
@@ -652,6 +658,15 @@
             document.getElementById('ticketStatus').value = t.status;
             document.getElementById('issueDate').value = t.issue_date;
             document.getElementById('statusComment').value = t.status_comment || "";
+            
+            // Logic to pull from the correct column based on type
+            let reason = "";
+            if (t.type === "Upgrade") reason = t.upgrade_reason;
+            else if (t.type === "Downgrade") reason = t.downgrade_reason;
+            else reason = t.reissue_reason || t.rebook_reason;
+            
+            document.getElementById('extraReason').value = reason || "";
+            
             const refundRecipient = document.getElementById('refundRecipient');
             if (refundRecipient) refundRecipient.value = t.refund_recipient || "";
             const refundDate = document.getElementById('refundDate');
@@ -662,6 +677,7 @@
             if (refundBy) refundBy.value = t.refund_by || "";
             const refundReason = document.getElementById('refundReason');
             if (refundReason) refundReason.value = t.refund_reason || "";
+            
             toggleDynamicFields();
 
             document.querySelectorAll('#tableBody tr.is-selected').forEach(el => el.classList.remove('is-selected'));
@@ -673,16 +689,24 @@
             if (!rawTicketNum) return alert("Ticket Number is required.");
             if (!/^\d{13}$/.test(rawTicketNum)) return alert("Ticket Number must be exactly 13 digits.");
 
+            const type = document.getElementById('ticketType').value;
+            const reasonValue = document.getElementById('extraReason').value;
+
             const payload = {
                 ticket_num: rawTicketNum,
-                type: document.getElementById('ticketType').value,
+                type: type,
                 status: document.getElementById('ticketStatus').value,
                 issue_date: document.getElementById('issueDate').value || null,
                 status_comment: document.getElementById('statusComment').value,
-                processed_by: activeProfile.full_name
+                processed_by: activeProfile.full_name,
+                
+                // Logic to route the reason to the specific column
+                reissue_reason: (type === "Re-issued" || type === "Re-booked") ? reasonValue : null,
+                upgrade_reason: (type === "Upgrade") ? reasonValue : null,
+                downgrade_reason: (type === "Downgrade") ? reasonValue : null
             };
-            // Add refund fields only when relevant (won't harm UI if DB doesn't have columns;
-            // if your Supabase table has these columns, they’ll be saved).
+
+            // Add refund fields only when relevant
             if (payload.status === "Refunded" || payload.status === "To be Refunded") {
                 payload.refund_by = document.getElementById('refundBy')?.value || null;
                 payload.refund_reason = document.getElementById('refundReason')?.value || null;
@@ -692,8 +716,9 @@
                 payload.refund_date = document.getElementById('refundDate')?.value || null;
                 payload.refund_mode = document.getElementById('refundMode')?.value || null;
             }
-            await saudiaClient.from('tickets').insert([payload]);
-            getTickets();
+            
+            const { error } = await saudiaClient.from('tickets').insert([payload]);
+            if (error) alert(error.message); else getTickets();
         }
 
         async function updateTicket() {
@@ -704,13 +729,21 @@
             if (!rawTicketNum) return alert("Ticket Number is required.");
             if (!/^\d{13}$/.test(rawTicketNum)) return alert("Ticket Number must be exactly 13 digits.");
 
+            const type = document.getElementById('ticketType').value;
+            const reasonValue = document.getElementById('extraReason').value;
+
             const payload = {
                 ticket_num: rawTicketNum,
-                type: document.getElementById('ticketType').value,
+                type: type,
                 status: document.getElementById('ticketStatus').value,
                 issue_date: document.getElementById('issueDate').value || null,
                 status_comment: document.getElementById('statusComment').value,
-                processed_by: activeProfile.full_name
+                processed_by: activeProfile.full_name,
+                
+                // Logic to route the reason to the specific column
+                reissue_reason: (type === "Re-issued" || type === "Re-booked") ? reasonValue : null,
+                upgrade_reason: (type === "Upgrade") ? reasonValue : null,
+                downgrade_reason: (type === "Downgrade") ? reasonValue : null
             };
 
             if (payload.status === "Refunded" || payload.status === "To be Refunded") {
@@ -757,6 +790,26 @@
         function filterTable() {
             const s = document.getElementById('search').value.toLowerCase();
             renderTable(ticketsList.filter(x => x.ticket_num.includes(s)));
+        }
+
+        function exportSelectedToCSV() {
+            const ids = Array.from(document.querySelectorAll('.export-check:checked')).map(cb => cb.getAttribute('data-id'));
+            if (!ids.length) return alert("Select tickets first.");
+            
+            const toExport = ticketsList.filter(t => ids.includes(t.id.toString()));
+            // Added Upgrade and Downgrade columns to headers
+            let csv = "Ticket #,Type,Status,Date,Issuer,Upgrade Reason,Downgrade Reason,Comment,Staff\n";
+            
+            toExport.forEach(t => {
+                csv += `${t.ticket_num},${t.type},${t.status},${t.issue_date},${t.issuer_name},${t.upgrade_reason || ''},${t.downgrade_reason || ''},${t.status_comment || ''},${t.processed_by}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Saudi_Airline_Detailed_Report_${new Date().toLocaleDateString()}.csv`;
+            a.click();
         }
 
         applyUiPrefs();
