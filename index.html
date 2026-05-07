@@ -527,19 +527,26 @@
 
         // REPAIRED DELETE FUNCTION
         async function deleteUser(userId) {
-            if (!confirm("Delete this user permanently?")) return;
-            try {
-                // CHANGED: Switched from .functions.invoke to .rpc() to match SQL setup
-                const { data, error } = await saudiaClient.rpc('delete_user_by_admin', {
-                    user_id: userId
-                });
-                if (error) return alert("Error deleting user: " + error.message);
-                alert('User deleted successfully!');
-                loadUsers();
-            } catch (err) {
-                alert("System Error: " + err.message);
-            }
+    if (!confirm("Are you sure you want to delete this user? This is permanent.")) return;
+    
+    try {
+        // CHANGED: Use .rpc() to call the SQL function 'delete_user_by_admin'
+        // This bypasses the need for an Edge Function entirely.
+        const { data, error } = await saudiaClient.rpc('delete_user_by_admin', {
+            user_id: userId
+        });
+        
+        if (error) {
+            return alert("Database Error: " + error.message);
         }
+        
+        alert('User account deleted successfully!');
+        loadUsers(); // Refresh the user management table
+        
+    } catch (err) {
+        alert("System Error: " + err.message);
+    }
+}
 
         async function handleAuth() {
             const emailIn = document.getElementById('email').value.trim();
