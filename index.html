@@ -574,7 +574,7 @@
     if (!name || !email || !password) return alert("All fields are required.");
     
     try {
-        // CHANGED: Use .rpc() to call the SQL function directly
+        // Ensure you are using .rpc() and matching the SQL variable names
         const { data, error } = await saudiaClient.rpc('create_user_by_admin', {
             email: email,
             password: password,
@@ -588,7 +588,7 @@
         
         alert('User created successfully!');
         
-        // Reset fields and refresh list
+        // Reset fields
         document.getElementById('newUserName').value = '';
         document.getElementById('newUserEmail').value = '';
         document.getElementById('newUserPassword').value = '';
@@ -597,6 +597,7 @@
     } catch (err) {
         alert("System Error: " + err.message);
     }
+            
 }        async function deleteUser(userId) {
             if (!confirm("Are you sure you want to delete this user?")) return;
             
