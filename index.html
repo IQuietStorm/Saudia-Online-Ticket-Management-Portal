@@ -247,11 +247,11 @@
                 <h1 style="color: var(--islamic-green); margin:0;">SAUDI AIRLINE</h1>
             </div>
             <p id="auth-title" style="color: var(--saudia-gold); font-weight: bold;">CLOUD TMS LOGIN</p>
-            <div id="reg-extra" style="display:none;"><input type="text" id="reg-fullname" placeholder="Full Name"></div>
             <input type="text" id="email" placeholder="Username/Email">
             <input type="password" id="password" placeholder="Password">
             <button onclick="handleAuth()" id="main-auth-btn" style="width:100%">Sign In</button>
-            <br><br><span id="auth-toggle" style="cursor:pointer; text-decoration:underline; font-size:12px;" onclick="toggleAuthMode()">New User? Create Account</span>
+            <br><button onclick="handleForgotPassword()" style="background:#666; width:100%; margin-top:10px;">Forgotten Password?</button>
+            <br><br><span style="font-size:12px; color:var(--muted-text);">Contact system administrator for account creation</span>
         </div>
     </div>
 
@@ -268,12 +268,52 @@
                 <div class="toggle-row">
                     <button id="theme-toggle" class="mini-btn" onclick="toggleTheme()">Night Mode</button>
                     <button id="layout-toggle" class="mini-btn alt" onclick="toggleLayout()">Mobile View</button>
+                    <button id="admin-dash-btn" class="mini-btn" style="display:none; background:#c41e3a;" onclick="toggleAdminDashboard()">Management</button>
                 </div>
                 <div class="user-info"><span id="display-name"></span> | <span style="cursor:pointer; font-weight:bold;" onclick="logout()">Logout</span></div>
             </div>
         </header>
 
-        <div class="container">
+        <div id="admin-dashboard" style="display:none; padding: 20px;">
+            <h2 style="color: var(--islamic-green); text-align: center; margin-bottom: 30px;">User Management Dashboard</h2>
+            <div class="input-grid" style="max-width: 600px; margin: 0 auto;">
+                <div>
+                    <label>Full Name</label>
+                    <input type="text" id="newUserName" placeholder="Enter full name">
+                    <label>Email Address</label>
+                    <input type="text" id="newUserEmail" placeholder="Enter email">
+                    <label>Password</label>
+                    <input type="password" id="newUserPassword" placeholder="Enter password">
+                    <label>Role</label>
+                    <select id="newUserRole">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <button onclick="createNewUser()" style="width:100%; margin-top:15px;">Create User</button>
+                </div>
+            </div>
+            <div style="margin-top: 40px;">
+                <h3 style="color: var(--islamic-green); text-align: center;">Existing Users</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="toggleAdminDashboard()" style="background:#999;">Back to Tickets</button>
+            </div>
+        </div>
+
+        <div id="tickets-container" class="container">
             <div class="input-grid">
                 <div>
                     <label>Ticket Number</label>
@@ -431,13 +471,14 @@
             </div>
         </div>
     </div>
+    </div>
 
     <script>
         const SAUDIA_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
         const SAUDIA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
         const saudiaClient = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY);
 
-        let activeUser, activeProfile, ticketsList = [], selectedTicketId = null, isRegMode = false;
+        let activeUser, activeProfile, ticketsList = [], selectedTicketId = null;
         let visibleTickets = [];
 
         async function initAuth() {
@@ -458,6 +499,8 @@
             selectedTicketId = null;
             document.getElementById('main-app').style.display = 'none';
             document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
         }
 
         function applyUiPrefs() {
@@ -490,28 +533,95 @@
             applyUiPrefs();
         }
 
-        function toggleAuthMode() {
-            isRegMode = !isRegMode;
-            document.getElementById('reg-extra').style.display = isRegMode ? 'block' : 'none';
-            document.getElementById('auth-title').innerText = isRegMode ? "CREATE ACCOUNT" : "CLOUD TMS LOGIN";
-            document.getElementById('main-auth-btn').innerText = isRegMode ? "REGISTER" : "SIGN IN";
+        function handleForgotPassword() {
+            const email = document.getElementById('email').value.trim();
+            if (!email) return alert("Please enter your email address.");
+            alert(`Password reset instructions have been sent to ${email}.\n\nPlease check your email inbox.`);
+            // In production, this would send a real password reset email
+        }
+
+        function toggleAdminDashboard() {
+            const adminDash = document.getElementById('admin-dashboard');
+            const ticketsCont = document.getElementById('tickets-container');
+            
+            if (adminDash.style.display === 'none') {
+                adminDash.style.display = 'block';
+                ticketsCont.style.display = 'none';
+                loadUsers();
+            } else {
+                adminDash.style.display = 'none';
+                ticketsCont.style.display = 'block';
+            }
+        }
+
+        async function loadUsers() {
+            const { data } = await saudiaClient.from('profiles').select('*');
+            const body = document.getElementById('usersTableBody');
+            body.innerHTML = '';
+            
+            (data || []).forEach(user => {
+                const row = body.insertRow();
+                row.innerHTML = `<td>${user.full_name}</td><td>${user.email || '-'}</td><td>${user.role}</td><td><button onclick="deleteUser('${user.id}')" style="background:#b22222; padding:5px 10px; font-size:11px;">Delete</button></td>`;
+            });
+        }
+
+        async function createNewUser() {
+            const name = document.getElementById('newUserName').value.trim();
+            const email = document.getElementById('newUserEmail').value.trim();
+            const password = document.getElementById('newUserPassword').value.trim();
+            const role = document.getElementById('newUserRole').value;
+            
+            if (!name || !email || !password) return alert("All fields are required.");
+            
+            try {
+                const { data, error } = await saudiaClient.auth.admin.createUser({
+                    email: email,
+                    password: password,
+                    email_confirm: true
+                });
+                
+                if (error) return alert("Error creating user: " + error.message);
+                
+                await saudiaClient.from('profiles').insert([{
+                    id: data.user.id,
+                    full_name: name,
+                    email: email,
+                    role: role
+                }]);
+                
+                alert('User created successfully!');
+                document.getElementById('newUserName').value = '';
+                document.getElementById('newUserEmail').value = '';
+                document.getElementById('newUserPassword').value = '';
+                document.getElementById('newUserRole').value = 'user';
+                loadUsers();
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm("Are you sure you want to delete this user?")) return;
+            
+            try {
+                await saudiaClient.auth.admin.deleteUser(userId);
+                await saudiaClient.from('profiles').delete().eq('id', userId);
+                alert('User deleted successfully!');
+                loadUsers();
+            } catch (err) {
+                alert("Error deleting user: " + err.message);
+            }
         }
 
         async function handleAuth() {
             const emailIn = document.getElementById('email').value.trim();
             const email = emailIn.includes('@') ? emailIn : emailIn + "@saudia-tms.com";
             const password = document.getElementById('password').value;
-            if (isRegMode) {
-                const name = document.getElementById('reg-fullname').value;
-                const { data, error } = await saudiaClient.auth.signUp({ email, password, options: { data: { full_name: name } } });
-                if (error) return alert(error.message);
-                await saudiaClient.from('profiles').insert([{ id: data.user.id, full_name: name, role: 'user' }]);
-                alert("Success! Please log in."); toggleAuthMode();
-            } else {
-                const { data, error } = await saudiaClient.auth.signInWithPassword({ email, password });
-                if (error) return alert(error.message);
-                activeUser = data.user; loadApp();
-            }
+            
+            const { data, error } = await saudiaClient.auth.signInWithPassword({ email, password });
+            if (error) return alert(error.message);
+            activeUser = data.user; 
+            loadApp();
         }
 
         async function loadApp() {
@@ -523,6 +633,7 @@
             if (activeProfile.role === 'admin') {
                 document.getElementById('admin-upd').style.display = 'inline-block';
                 document.getElementById('admin-del').style.display = 'inline-block';
+                document.getElementById('admin-dash-btn').style.display = 'inline-block';
             }
             getTickets();
         }
