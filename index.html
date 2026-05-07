@@ -599,20 +599,20 @@
     }         
 }        
        async function deleteUser(userId) {
-    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
+    if (!confirm("Are you sure you want to delete this user?")) return;
     
     try {
-        // Changed from .functions.invoke() to .rpc()
+        // CHANGED: Use .rpc() instead of .functions.invoke()
         const { data, error } = await saudiaClient.rpc('delete_user_by_admin', {
             user_id: userId
         });
         
         if (error) {
-            return alert("Database Error: " + error.message);
+            return alert("Error deleting user: " + error.message);
         }
         
-        alert('User account successfully removed.');
-        loadUsers(); // Refresh the user management table
+        alert('User deleted successfully!');
+        loadUsers(); // Refresh the list
         
     } catch (err) {
         alert("System Error: " + err.message);
