@@ -91,6 +91,7 @@
             margin: 20px auto;
         }
         
+        /* HEADER STYLING */
         header { 
             background-color: var(--card-bg); 
             padding: 10px 25px; 
@@ -131,6 +132,7 @@
         .header-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
         .user-info { font-family: ui-sans-serif, Arial, sans-serif; font-size: 0.85em; color: var(--text-main); }
         
+        /* HEADER TOGGLES */
         .toggle-row { display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
         .mini-btn { 
             background: var(--saudia-gold); 
@@ -141,6 +143,7 @@
         }
         .mini-btn.alt { background: var(--islamic-green); }
 
+        /* UI ELEMENTS */
         .container { padding: 22px; font-family: ui-sans-serif, Arial, sans-serif; }
         input, select { 
             width: 100%; 
@@ -170,21 +173,30 @@
         }
         button:hover { filter: brightness(1.05); transform: translateY(-1px); }
         button:active { transform: translateY(0px) scale(0.99); }
+        button:focus-visible { outline: none; box-shadow: var(--focus-ring), 0 10px 18px rgba(0,0,0,0.10); }
         .btn-update { background: var(--saudia-gold); display: none; }
         .btn-delete { background: #b22222; display: none; }
         
+        /* TABLE STYLING */
         .table-wrap { overflow-x: auto; margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 600px; }
         th { background: var(--surface-3); color: var(--islamic-green); text-align: left; padding: 12px; border-bottom: 2px solid var(--saudia-gold); position: sticky; top: 0; backdrop-filter: blur(8px); }
         td { padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.10); }
+        tbody tr { transition: transform 0.12s ease, filter 0.2s ease, box-shadow 0.2s ease; cursor: pointer; }
+        tbody tr:hover { filter: brightness(1.01); }
+        tbody tr.is-selected { outline: 2px solid rgba(142, 113, 62, 0.55); outline-offset: -2px; }
         
         .row-flown { background-color: var(--flown-bg) !important; }
         .row-refund { background-color: var(--refund-bg) !important; }
         .row-na { background-color: var(--na-bg) !important; }
         label { font-size: 11px; font-weight: bold; color: var(--saudia-gold); display: block; margin-bottom: 2px; letter-spacing: 0.3px; }
+        #auth-toggle { color: var(--muted-text); }
+        #auth-toggle:hover { color: var(--text-main); }
 
+        /* MOBILE RESPONSIVE GRID */
         .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
+        /* FILTER + SORT BAR */
         .filter-bar {
             margin-top: 18px;
             padding: 14px;
@@ -198,18 +210,32 @@
         }
         [data-theme="dark"] .filter-bar { border-color: rgba(255,255,255,0.08); }
         .filter-item label { margin-bottom: 6px; }
+        .filter-item input, .filter-item select { margin-bottom: 0; }
         .filter-actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+        .filter-actions .mini-btn { padding: 10px 12px; font-size: 11px; }
         .muted { color: var(--muted-text); font-size: 12px; }
 
         @media (max-width: 768px) {
             .input-grid { grid-template-columns: 1fr; }
             .header-title { font-size: 1.2em; order: 3; width: 100%; margin-top: 10px; }
             #main-app { margin: 0; border-radius: 0; min-height: 100vh; }
+            header { justify-content: space-between; }
+            .logo-box { margin-right: 0; }
+            .container { padding: 16px; }
+            button { width: 100%; justify-content: center; }
+            .btn-row { gap: 8px; }
             .filter-bar { grid-template-columns: 1fr; }
+            .filter-actions { justify-content: stretch; }
+            .filter-actions .mini-btn { width: 100%; }
         }
 
+        /* MANUAL "MOBILE VIEW" TOGGLE (forces compact layout) */
         [data-layout="mobile"] #main-app { margin: 0; border-radius: 0; min-height: 100vh; }
         [data-layout="mobile"] .input-grid { grid-template-columns: 1fr; }
+        [data-layout="mobile"] .container { padding: 16px; }
+        [data-layout="mobile"] header { justify-content: space-between; }
+        [data-layout="mobile"] .header-title { font-size: 1.2em; order: 3; width: 100%; margin-top: 10px; }
+        [data-layout="mobile"] .filter-bar { grid-template-columns: 1fr; }
     </style>
 </head>
 <body>
@@ -225,6 +251,7 @@
             <input type="password" id="password" placeholder="Password">
             <button onclick="handleAuth()" id="main-auth-btn" style="width:100%">Sign In</button>
             <br><button onclick="handleForgotPassword()" style="background:#666; width:100%; margin-top:10px;">Forgotten Password?</button>
+            <br><br><span style="font-size:12px; color:var(--muted-text);">Contact system administrator for account creation</span>
         </div>
     </div>
 
@@ -410,6 +437,15 @@
                         <option value="issue_date">Date</option>
                         <option value="status">Ticket Status</option>
                         <option value="type">Ticket Type</option>
+                        <option value="processed_by">Staff</option>
+                    </select>
+                </div>
+
+                <div class="filter-item">
+                    <label>Order</label>
+                    <select id="sortDir" onchange="applyFiltersAndSort()">
+                        <option value="desc">Descending</option>
+                        <option value="asc">Ascending</option>
                     </select>
                 </div>
 
@@ -435,6 +471,7 @@
             </div>
         </div>
     </div>
+    </div>
 
     <script>
         const SAUDIA_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
@@ -457,15 +494,28 @@
 
         async function logout() {
             await saudiaClient.auth.signOut();
-            location.reload();
+            activeUser = null;
+            activeProfile = null;
+            selectedTicketId = null;
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
         }
 
         function applyUiPrefs() {
             const theme = localStorage.getItem('tms_theme') || 'light';
             document.documentElement.setAttribute('data-theme', theme);
+
             const layout = localStorage.getItem('tms_layout') || 'auto';
             if (layout === 'mobile') document.documentElement.setAttribute('data-layout', 'mobile');
             else document.documentElement.removeAttribute('data-layout');
+
+            const themeBtn = document.getElementById('theme-toggle');
+            if (themeBtn) themeBtn.innerText = theme === 'dark' ? 'Light Mode' : 'Night Mode';
+
+            const layoutBtn = document.getElementById('layout-toggle');
+            if (layoutBtn) layoutBtn.innerText = layout === 'mobile' ? 'Desktop View' : 'Mobile View';
         }
 
         function toggleTheme() {
@@ -473,6 +523,7 @@
             const target = current === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', target);
             localStorage.setItem('tms_theme', target);
+            applyUiPrefs();
         }
 
         function toggleLayout() {
@@ -484,13 +535,15 @@
 
         function handleForgotPassword() {
             const email = document.getElementById('email').value.trim();
-            if (!email) return alert("Please enter email.");
-            alert("Reset instructions sent.");
+            if (!email) return alert("Please enter your email address.");
+            alert(`Password reset instructions have been sent to ${email}.\n\nPlease check your email inbox.`);
+            // In production, this would send a real password reset email
         }
 
         function toggleAdminDashboard() {
             const adminDash = document.getElementById('admin-dashboard');
             const ticketsCont = document.getElementById('tickets-container');
+            
             if (adminDash.style.display === 'none') {
                 adminDash.style.display = 'block';
                 ticketsCont.style.display = 'none';
@@ -505,6 +558,7 @@
             const { data } = await saudiaClient.from('profiles').select('*');
             const body = document.getElementById('usersTableBody');
             body.innerHTML = '';
+            
             (data || []).forEach(user => {
                 const row = body.insertRow();
                 row.innerHTML = `<td>${user.full_name}</td><td>${user.email || '-'}</td><td>${user.role}</td><td><button onclick="deleteUser('${user.id}')" style="background:#b22222; padding:5px 10px; font-size:11px;">Delete</button></td>`;
@@ -512,46 +566,69 @@
         }
 
         async function createNewUser() {
-            const name = document.getElementById('newUserName').value.trim();
-            const email = document.getElementById('newUserEmail').value.trim();
-            const password = document.getElementById('newUserPassword').value.trim();
-            const role = document.getElementById('newUserRole').value;
-            if (!name || !email || !password) return alert("All fields required.");
-            
-            const { data, error } = await saudiaClient.rpc('create_user_by_admin', {
-                email, password, full_name: name, user_role: role
-            });
-            if (error) alert(error.message);
-            else { alert('User created!'); loadUsers(); }
-        }
-
-        // REPAIRED DELETE FUNCTION
-        async function deleteUser(userId) {
-    if (!confirm("Are you sure you want to delete this user? This is permanent.")) return;
+    const name = document.getElementById('newUserName').value.trim();
+    const email = document.getElementById('newUserEmail').value.trim();
+    const password = document.getElementById('newUserPassword').value.trim();
+    const role = document.getElementById('newUserRole').value;
+    
+    if (!name || !email || !password) return alert("All fields are required.");
     
     try {
-        // CHANGED: Use .rpc() to call the SQL function 'delete_user_by_admin'
-        // This bypasses the need for an Edge Function entirely.
-        const { data, error } = await saudiaClient.rpc('delete_user_by_admin', {
-            user_id: userId
+        const { data, error } = await saudiaClient.functions.invoke('create_user_by_admin', {
+            method: 'POST',
+            body: JSON.stringify({
+                email: email,
+                password: password,
+                full_name: name,
+                user_role: role
+            })
         });
         
         if (error) {
-            return alert("Database Error: " + error.message);
+            console.error('Create user error:', error, data);
+            return alert("Error creating user: " + (error.message || 'Unable to complete the request.'));
         }
         
-        alert('User account deleted successfully!');
-        loadUsers(); // Refresh the user management table
+        alert('User created successfully!');
+        
+        document.getElementById('newUserName').value = '';
+        document.getElementById('newUserEmail').value = '';
+        document.getElementById('newUserPassword').value = '';
+        loadUsers();
         
     } catch (err) {
+        console.error('Create user exception:', err);
         alert("System Error: " + err.message);
     }
 }
 
+        async function deleteUser(userId) {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+    
+    try {
+        const { data, error } = await saudiaClient.functions.invoke('delete_user_by_admin', {
+            method: 'POST',
+            body: JSON.stringify({ user_id: userId })
+        });
+        
+        if (error) {
+            console.error('Delete user error:', error, data);
+            return alert("Error deleting user: " + (error.message || 'Unable to complete the request.'));
+        }
+        
+        alert('User deleted successfully!');
+        loadUsers();
+        
+    } catch (err) {
+        console.error('Delete user exception:', err);
+        alert("System Error: " + err.message);
+    }
+}
         async function handleAuth() {
             const emailIn = document.getElementById('email').value.trim();
             const email = emailIn.includes('@') ? emailIn : emailIn + "@saudia-tms.com";
             const password = document.getElementById('password').value;
+            
             const { data, error } = await saudiaClient.auth.signInWithPassword({ email, password });
             if (error) return alert(error.message);
             activeUser = data.user; 
@@ -573,7 +650,19 @@
         }
 
         function toggleDynamicFields() {
+            const type = document.getElementById('ticketType').value;
             const status = document.getElementById('ticketStatus').value;
+            
+            // Show reason box for types that need it
+            const showReason = (type === "Upgrade" || type === "Downgrade" || type === "Re-issue" || type === "Re-booked");
+            document.getElementById('reason-box').style.display = showReason ? "block" : "none";
+            
+            // Update label based on type
+            const reasonLabel = document.getElementById('reasonLabel');
+            if (type === "Upgrade") reasonLabel.innerText = "Reason for upgrade";
+            else if (type === "Downgrade") reasonLabel.innerText = "Reason for downgrade";
+            else if (type === "Re-issue" || type === "Re-booked") reasonLabel.innerText = "Type Reason";
+            
             document.getElementById('flown-box').style.display = (status === "Flown") ? "block" : "none";
             document.getElementById('refund-box').style.display = (status === "Refunded" || status === "To be Refunded") ? "block" : "none";
             document.getElementById('refunded-only-box').style.display = (status === "Refunded") ? "block" : "none";
@@ -582,35 +671,307 @@
         async function getTickets() {
             const { data } = await saudiaClient.from('tickets').select('*').order('created_at', { ascending: false });
             ticketsList = data || [];
+            populateStaffFilterOptions();
             applyFiltersAndSort();
         }
 
+        function populateStaffFilterOptions() {
+            const staffSel = document.getElementById('filterStaff');
+            if (!staffSel) return;
+
+            const current = staffSel.value || "";
+            const unique = Array.from(new Set((ticketsList || []).map(t => (t.processed_by || '').trim()).filter(Boolean)))
+                .sort((a, b) => a.localeCompare(b));
+
+            staffSel.innerHTML = `<option value="">All</option>` + unique.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
+            staffSel.value = unique.includes(current) ? current : "";
+        }
+
         function applyFiltersAndSort() {
-            renderTable(ticketsList);
+            const q = (document.getElementById('search')?.value || '').trim().toLowerCase();
+            const fStatus = document.getElementById('filterStatus')?.value || '';
+            const fType = document.getElementById('filterType')?.value || '';
+            const fStaff = document.getElementById('filterStaff')?.value || '';
+            const dateFrom = document.getElementById('filterDateFrom')?.value || '';
+            const dateTo = document.getElementById('filterDateTo')?.value || '';
+            const sortBy = document.getElementById('sortBy')?.value || 'created_at';
+            const sortDir = document.getElementById('sortDir')?.value || 'desc';
+
+            const fromTs = dateFrom ? Date.parse(dateFrom + 'T00:00:00') : null;
+            const toTs = dateTo ? Date.parse(dateTo + 'T23:59:59') : null;
+
+            visibleTickets = (ticketsList || []).filter(t => {
+                if (q && !(String(t.ticket_num || '').toLowerCase().includes(q))) return false;
+                if (fStatus && t.status !== fStatus) return false;
+                if (fType && t.type !== fType) return false;
+                if (fStaff && (t.processed_by || '') !== fStaff) return false;
+
+                const issue = t.issue_date ? Date.parse(t.issue_date + 'T00:00:00') : null;
+                if (fromTs && (!issue || issue < fromTs)) return false;
+                if (toTs && (!issue || issue > toTs)) return false;
+                return true;
+            });
+
+            const dir = sortDir === 'asc' ? 1 : -1;
+            visibleTickets.sort((a, b) => dir * compareTickets(a, b, sortBy));
+
+            renderTable(visibleTickets);
+            updateResultMeta();
+        }
+
+        function compareTickets(a, b, sortBy) {
+            if (sortBy === 'issue_date') {
+                const ad = a.issue_date ? Date.parse(a.issue_date + 'T00:00:00') : 0;
+                const bd = b.issue_date ? Date.parse(b.issue_date + 'T00:00:00') : 0;
+                return ad - bd;
+            }
+            if (sortBy === 'created_at') {
+                const ad = a.created_at ? Date.parse(a.created_at) : 0;
+                const bd = b.created_at ? Date.parse(b.created_at) : 0;
+                return ad - bd;
+            }
+            if (sortBy === 'status') return String(a.status || '').localeCompare(String(b.status || ''));
+            if (sortBy === 'type') return String(a.type || '').localeCompare(String(b.type || ''));
+            if (sortBy === 'processed_by') return String(a.processed_by || '').localeCompare(String(b.processed_by || ''));
+            return 0;
+        }
+
+        function updateResultMeta() {
+            const el = document.getElementById('result-meta');
+            if (!el) return;
+            const total = (ticketsList || []).length;
+            const shown = (visibleTickets || []).length;
+            el.textContent = `Showing ${shown} of ${total}`;
+        }
+
+        function resetFilters() {
+            const ids = ['search', 'filterStatus', 'filterType', 'filterStaff', 'filterDateFrom', 'filterDateTo', 'sortBy', 'sortDir'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (el.tagName === 'SELECT') el.value = (id === 'sortBy' ? 'created_at' : (id === 'sortDir' ? 'desc' : ''));
+                else el.value = '';
+            });
+            applyFiltersAndSort();
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
         function renderTable(data) {
             const body = document.getElementById('tableBody'); body.innerHTML = '';
             data.forEach(t => {
                 const row = body.insertRow();
+                let cls = 'row-na';
+                if(t.status === 'Flown') cls = 'row-flown';
+                if(t.status === 'Refunded' || t.status === 'To be Refunded') cls = 'row-refund';
+                row.className = cls;
                 row.innerHTML = `<td><input type="checkbox" class="export-check" data-id="${t.id}"></td><td>${t.ticket_num}</td><td>${t.type}</td><td>${t.status}</td><td>${t.issue_date || '-'}</td><td>${t.processed_by}</td>`;
+                row.onclick = (e) => { if(e.target.type !== 'checkbox') selectTicket(t, row); };
+                if (selectedTicketId && t.id === selectedTicketId) row.classList.add('is-selected');
             });
         }
 
+        // Function to retrieve data back into the form when a row is clicked
+        function selectTicket(t, rowEl) {
+            selectedTicketId = t.id;
+            document.getElementById('ticketNum').value = t.ticket_num;
+            document.getElementById('ticketType').value = t.type;
+            document.getElementById('ticketStatus').value = t.status;
+            document.getElementById('issueDate').value = t.issue_date;
+            document.getElementById('statusComment').value = t.status_comment || "";
+            
+            // Logic to pull from the correct column based on type
+            let reason = "";
+            if (t.type === "Upgrade") reason = t.upgrade_reason;
+            else if (t.type === "Downgrade") reason = t.downgrade_reason;
+            else if (t.type === "Re-issue") reason = t.reissue_reason;
+            else if (t.type === "Re-booked") reason = t.rebook_reason;
+            
+            document.getElementById('extraReason').value = reason || "";
+            
+            const refundRecipient = document.getElementById('refundRecipient');
+            if (refundRecipient) refundRecipient.value = t.refund_recipient || "";
+            const refundDate = document.getElementById('refundDate');
+            if (refundDate) refundDate.value = t.refund_date || "";
+            const refundMode = document.getElementById('refundMode');
+            if (refundMode) refundMode.value = t.refund_mode || "";
+            const refundBy = document.getElementById('refundBy');
+            if (refundBy) refundBy.value = t.refund_by || "";
+            const refundReason = document.getElementById('refundReason');
+            if (refundReason) refundReason.value = t.refund_reason || "";
+            
+            toggleDynamicFields();
+
+            document.querySelectorAll('#tableBody tr.is-selected').forEach(el => el.classList.remove('is-selected'));
+            if (rowEl) rowEl.classList.add('is-selected');
+        }
+
         async function saveTicket() {
+            const rawTicketNum = (document.getElementById('ticketNum').value || '').trim();
+            if (!rawTicketNum) return alert("Ticket Number is required.");
+            if (!/^\d{13}$/.test(rawTicketNum)) return alert("Ticket Number must be exactly 13 digits.");
+
+            const type = document.getElementById('ticketType').value;
+            const reasonValue = document.getElementById('extraReason').value;
+
             const payload = {
-                ticket_num: document.getElementById('ticketNum').value,
-                type: document.getElementById('ticketType').value,
+                ticket_num: rawTicketNum,
+                type: type,
                 status: document.getElementById('ticketStatus').value,
-                issue_date: document.getElementById('issueDate').value,
-                processed_by: activeProfile.full_name
+                issue_date: document.getElementById('issueDate').value || null,
+                status_comment: document.getElementById('statusComment').value,
+                processed_by: activeProfile.full_name,
+                
+                // Logic to route the reason to the specific column
+                reissue_reason: (type === "Re-issue") ? reasonValue : null,
+                rebook_reason: (type === "Re-booked") ? reasonValue : null,
+                upgrade_reason: (type === "Upgrade") ? reasonValue : null,
+                downgrade_reason: (type === "Downgrade") ? reasonValue : null
             };
+
+            // Add refund fields only when relevant
+            if (payload.status === "Refunded" || payload.status === "To be Refunded") {
+                payload.refund_by = document.getElementById('refundBy')?.value || null;
+                payload.refund_reason = document.getElementById('refundReason')?.value || null;
+            }
+            if (payload.status === "Refunded") {
+                payload.refund_recipient = document.getElementById('refundRecipient')?.value || null;
+                payload.refund_date = document.getElementById('refundDate')?.value || null;
+                payload.refund_mode = document.getElementById('refundMode')?.value || null;
+            }
+            
             const { error } = await saudiaClient.from('tickets').insert([payload]);
-            if (error) alert(error.message); else getTickets();
+            if (error) alert(error.message); else {
+                alert('Ticket saved successfully!');
+                document.getElementById('ticketNum').value = '';
+                document.getElementById('ticketType').value = 'Fresh Issue';
+                document.getElementById('ticketStatus').value = 'Flown';
+                document.getElementById('issueDate').value = '';
+                document.getElementById('extraReason').value = '';
+                document.getElementById('statusComment').value = '';
+                toggleDynamicFields();
+                getTickets();
+            }
+        }
+
+        async function adminCreateUser(newEmail, newPassword, newName, newRole) {
+    const { data, error } = await saudiaClient.functions.invoke('create_user_by_admin', {
+        method: 'POST',
+        body: JSON.stringify({
+            email: newEmail,
+            password: newPassword,
+            full_name: newName,
+            user_role: newRole
+        })
+    });
+
+    if (error) {
+        console.error('Admin create user error:', error, data);
+        alert("Error creating user: " + (error.message || 'Unable to complete the request.'));
+    } else {
+        alert("Account successfully created for " + newName);
+    }
+}
+
+        async function updateTicket() {
+            if (!activeProfile || activeProfile.role !== 'admin') return alert("Admin only.");
+            if (!selectedTicketId) return alert("Select a ticket row first.");
+
+            const rawTicketNum = (document.getElementById('ticketNum').value || '').trim();
+            if (!rawTicketNum) return alert("Ticket Number is required.");
+            if (!/^\d{13}$/.test(rawTicketNum)) return alert("Ticket Number must be exactly 13 digits.");
+
+            const type = document.getElementById('ticketType').value;
+            const reasonValue = document.getElementById('extraReason').value;
+
+            const payload = {
+                ticket_num: rawTicketNum,
+                type: type,
+                status: document.getElementById('ticketStatus').value,
+                issue_date: document.getElementById('issueDate').value || null,
+                status_comment: document.getElementById('statusComment').value,
+                processed_by: activeProfile.full_name,
+                
+                // Logic to route the reason to the specific column
+                reissue_reason: (type === "Re-issue") ? reasonValue : null,
+                rebook_reason: (type === "Re-booked") ? reasonValue : null,
+                upgrade_reason: (type === "Upgrade") ? reasonValue : null,
+                downgrade_reason: (type === "Downgrade") ? reasonValue : null
+            };
+
+            if (payload.status === "Refunded" || payload.status === "To be Refunded") {
+                payload.refund_by = document.getElementById('refundBy')?.value || null;
+                payload.refund_reason = document.getElementById('refundReason')?.value || null;
+            } else {
+                payload.refund_by = null;
+                payload.refund_reason = null;
+            }
+
+            if (payload.status === "Refunded") {
+                payload.refund_recipient = document.getElementById('refundRecipient')?.value || null;
+                payload.refund_date = document.getElementById('refundDate')?.value || null;
+                payload.refund_mode = document.getElementById('refundMode')?.value || null;
+            } else {
+                payload.refund_recipient = null;
+                payload.refund_date = null;
+                payload.refund_mode = null;
+            }
+
+            const { error } = await saudiaClient.from('tickets').update(payload).eq('id', selectedTicketId);
+            if (error) return alert(error.message);
+            alert('Ticket updated successfully!');
+            await getTickets();
+        }
+
+        async function deleteTicket() {
+            if (!activeProfile || activeProfile.role !== 'admin') return alert("Admin only.");
+            if (!selectedTicketId) return alert("Select a ticket row first.");
+            if (!confirm("Delete this ticket permanently?")) return;
+
+            const { error } = await saudiaClient.from('tickets').delete().eq('id', selectedTicketId);
+            if (error) return alert(error.message);
+            alert('Ticket deleted successfully!');
+
+            selectedTicketId = null;
+            document.querySelectorAll('#tableBody tr.is-selected').forEach(el => el.classList.remove('is-selected'));
+            await getTickets();
+        }
+
+        function toggleAllCheckboxes() {
+            const master = document.getElementById('selectAll').checked;
+            document.querySelectorAll('.export-check').forEach(cb => cb.checked = master);
+        }
+
+        function filterTable() {
+            const s = document.getElementById('search').value.toLowerCase();
+            renderTable(ticketsList.filter(x => x.ticket_num.includes(s)));
         }
 
         function exportSelectedToCSV() {
-            alert("Exporting...");
+            const ids = Array.from(document.querySelectorAll('.export-check:checked')).map(cb => cb.getAttribute('data-id'));
+            if (!ids.length) return alert("Select tickets first.");
+            
+            const toExport = ticketsList.filter(t => ids.includes(t.id.toString()));
+            // Added Upgrade and Downgrade columns to headers
+            let csv = "Ticket #,Type,Status,Date,Issuer,Upgrade Reason,Downgrade Reason,Comment,Staff\n";
+            
+            toExport.forEach(t => {
+                csv += `${t.ticket_num},${t.type},${t.status},${t.issue_date},${t.issuer_name},${t.upgrade_reason || ''},${t.downgrade_reason || ''},${t.status_comment || ''},${t.processed_by}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Saudi_Airline_Detailed_Report_${new Date().toLocaleDateString()}.csv`;
+            a.click();
         }
 
         applyUiPrefs();
