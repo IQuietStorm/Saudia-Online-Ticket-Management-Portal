@@ -598,11 +598,11 @@
         alert("System Error: " + err.message);
     }         
 }        
-       async function deleteUser(userId) {
+      async function deleteUser(userId) {
     if (!confirm("Are you sure you want to delete this user?")) return;
     
     try {
-        // CHANGED: Use .rpc() instead of .functions.invoke()
+        // CHANGED: Use .rpc() to match the SQL function we created
         const { data, error } = await saudiaClient.rpc('delete_user_by_admin', {
             user_id: userId
         });
@@ -612,7 +612,7 @@
         }
         
         alert('User deleted successfully!');
-        loadUsers(); // Refresh the list
+        loadUsers(); // Refresh the table
         
     } catch (err) {
         alert("System Error: " + err.message);
