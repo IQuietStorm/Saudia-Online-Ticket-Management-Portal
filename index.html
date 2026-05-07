@@ -598,30 +598,27 @@
         alert("System Error: " + err.message);
     }
             
-}        async function deleteUser(userId) {
-            if (!confirm("Are you sure you want to delete this user?")) return;
-            
-            try {
-                // Call the Edge Function to delete user
-                const { data, error } = await saudiaClient.functions.invoke('delete-user', {
-                    body: { userId: userId }
-                });
-                
-                if (error) {
-                    return alert("Error deleting user: " + (error.message || JSON.stringify(error)));
-                }
-                
-                if (data.error) {
-                    return alert("Error deleting user: " + data.error);
-                }
-                
-                alert('User deleted successfully!');
-                loadUsers();
-            } catch (err) {
-                alert("Error: " + err.message + "\n\nNote: You need to create a Supabase Edge Function named 'delete-user' with admin permissions to enable user deletion.");
-            }
+}        
+        async function deleteUser(userId) {
+    if (!confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
+    
+    try {
+        // CHANGED: Use .rpc() to call the SQL function 'delete_user_by_admin'
+        const { data, error } = await saudiaClient.rpc('delete_user_by_admin', {
+            user_id: userId
+        });
+        
+        if (error) {
+            return alert("Error deleting user: " + error.message);
         }
-
+        
+        alert('User deleted successfully!');
+        loadUsers(); // Refresh the table automatically
+        
+    } catch (err) {
+        alert("System Error: " + err.message);
+    }
+}
         async function handleAuth() {
             const emailIn = document.getElementById('email').value.trim();
             const email = emailIn.includes('@') ? emailIn : emailIn + "@saudia-tms.com";
