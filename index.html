@@ -866,6 +866,21 @@
             }
         }
 
+        async function adminCreateUser(newEmail, newPassword, newName, newRole) {
+    const { data, error } = await saudiaClient.rpc('create_user_by_admin', {
+        email: newEmail,
+        password: newPassword,
+        full_name: newName,
+        user_role: newRole
+    });
+
+    if (error) {
+        alert("Error creating user: " + error.message);
+    } else {
+        alert("Account successfully created for " + newName);
+    }
+}
+
         async function updateTicket() {
             if (!activeProfile || activeProfile.role !== 'admin') return alert("Admin only.");
             if (!selectedTicketId) return alert("Select a ticket row first.");
