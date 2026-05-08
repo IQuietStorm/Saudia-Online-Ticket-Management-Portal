@@ -602,15 +602,22 @@
     if (!name || !email || !password) return alert("All fields are required.");
     
     try {
+        const payload = {
+            // snake_case (what your UI originally used)
+            email,
+            password,
+            full_name: name,
+            user_role: role,
+            // common camelCase variants (what many functions expect)
+            fullName: name,
+            role,
+            userRole: role
+        };
+
         const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['create_user_by_admin', 'create-user'], {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: {
-                email,
-                password,
-                full_name: name,
-                user_role: role
-            }
+            body: payload
         });
         
         if (error) {
@@ -913,15 +920,20 @@
         }
 
         async function adminCreateUser(newEmail, newPassword, newName, newRole) {
+    const payload = {
+        email: newEmail,
+        password: newPassword,
+        full_name: newName,
+        user_role: newRole,
+        fullName: newName,
+        role: newRole,
+        userRole: newRole
+    };
+
     const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['create_user_by_admin', 'create-user'], {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: {
-            email: newEmail,
-            password: newPassword,
-            full_name: newName,
-            user_role: newRole
-        }
+        body: payload
     });
 
     if (error) {
