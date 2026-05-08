@@ -817,26 +817,44 @@
         }
 
         async function loadApp() {
-            await ensureProfileForUser(activeUser);
-            const { data } = await saudiaClient.from('profiles').select('*').eq('id', activeUser.id).single();
-            activeProfile = data || { id: activeUser.id, full_name: activeUser.email, role: 'user' };
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
-            const roleLabel = (activeProfile.role || 'user').toUpperCase();
-            document.getElementById('display-name').innerText = `${activeProfile.full_name || activeUser.email} (${roleLabel})`;
+    // 1. Ensure a profile exists for the current user
+    await ensureProfileForUser(activeUser);
 
-            // Ticket permissions: Supervisor/Admin can update/delete
-            const updBtn = document.getElementById('admin-upd');
-            const delBtn = document.getElementById('admin-del');
-            const canEdit = canEditTickets();
-            if (updBtn) updBtn.style.display = canEdit ? 'inline-block' : 'none';
-            if (delBtn) delBtn.style.display = canEdit ? 'inline-block' : 'none';
+    // 2. Fetch the LATEST data from the profiles table
+    const { data, error } = await saudiaClient
+        .from('profiles')
+        .select('*')
+        .eq('id', activeUser.id)
+        .single();
 
-            // User management: Admin only
-            const adminDashBtn = document.getElementById('admin-dash-btn');
-            if (adminDashBtn) adminDashBtn.style.display = canManageUsers() ? 'inline-block' : 'none';
-            getTickets();
-        }
+    if (error) {
+        console.error("Error fetching profile:", error);
+        activeProfile = { id: activeUser.id, full_name: activeUser.email, role: 'user' };
+    } else {
+        activeProfile = data;
+    }
+
+    // 3. Update the UI
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    
+    const roleLabel = (activeProfile.role || 'user').toUpperCase();
+    document.getElementById('display-name').innerText = `${activeProfile.full_name || activeUser.email} (${roleLabel})`;
+
+    // 4. SHOW ADMIN BUTTONS if role is admin
+    const isAdmin = activeProfile.role === 'admin';
+    const adminDashBtn = document.getElementById('admin-dash-btn');
+    if (adminDashBtn) {
+        adminDashBtn.style.display = isAdmin ? 'inline-block' : 'none';
+    }
+
+    // Show/Hide update/delete buttons for tickets
+    const canEdit = isAdmin || activeProfile.role === 'supervisor';
+    document.getElementById('admin-upd').style.display = canEdit ? 'inline-block' : 'none';
+    document.getElementById('admin-del').style.display = canEdit ? 'inline-block' : 'none';
+
+    getTickets();
+}
 
         function toggleDynamicFields() {
             const type = document.getElementById('ticketType').value;
