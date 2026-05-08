@@ -560,7 +560,13 @@
             
             (data || []).forEach(user => {
                 const row = body.insertRow();
-                row.innerHTML = `<td>${user.full_name}</td><td>${user.email || '-'}</td><td>${user.role}</td><td><button onclick="deleteUser('${user.id}')" style="background:#b22222; padding:5px 10px; font-size:11px;">Delete</button></td>`;
+                const deleteBtn = document.createElement('button');
+                deleteBtn.style.cssText = 'background:#b22222; padding:5px 10px; font-size:11px;';
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.onclick = () => deleteUser(user.id);
+                
+                row.innerHTML = `<td>${escapeHtml(user.full_name)}</td><td>${escapeHtml(user.email || '-')}</td><td>${escapeHtml(user.role)}</td><td></td>`;
+                row.cells[3].appendChild(deleteBtn);
             });
         }
 
@@ -925,16 +931,13 @@
         email: newEmail,
         password: newPassword,
         full_name: newName,
-        user_role: newRole,
-        fullName: newName,
-        role: newRole,
-        userRole: newRole
+        user_role: newRole
     };
 
     const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['create_user_by_admin', 'create-user'], {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: payload
+        body: JSON.stringify(payload)
     });
 
     if (error) {
