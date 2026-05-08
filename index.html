@@ -471,7 +471,6 @@
             </div>
         </div>
     </div>
-    </div>
 
     <script>
         const SAUDIA_URL = 'https://plztbuirvlxlbmbuscwf.supabase.co';
@@ -772,7 +771,7 @@
                 if(t.status === 'Flown') cls = 'row-flown';
                 if(t.status === 'Refunded' || t.status === 'To be Refunded') cls = 'row-refund';
                 row.className = cls;
-                row.innerHTML = `<td><input type="checkbox" class="export-check" data-id="${t.id}"></td><td>${t.ticket_num}</td><td>${t.type}</td><td>${t.status}</td><td>${t.issue_date || '-'}</td><td>${t.processed_by}</td>`;
+                row.innerHTML = `<td><input type="checkbox" class="export-check" data-id="${escapeHtml(t.id)}"></td><td>${escapeHtml(t.ticket_num || '')}</td><td>${escapeHtml(t.type || '')}</td><td>${escapeHtml(t.status || '')}</td><td>${escapeHtml(t.issue_date || '-')}</td><td>${escapeHtml(t.processed_by || '')}</td>`;
                 row.onclick = (e) => { if(e.target.type !== 'checkbox') selectTicket(t, row); };
                 if (selectedTicketId && t.id === selectedTicketId) row.classList.add('is-selected');
             });
@@ -786,6 +785,8 @@
             document.getElementById('ticketStatus').value = t.status;
             document.getElementById('issueDate').value = t.issue_date;
             document.getElementById('statusComment').value = t.status_comment || "";
+            document.getElementById('issuerName').value = t.issuer_name || "";
+            document.getElementById('flightDate').value = t.flight_date || "";
             
             // Logic to pull from the correct column based on type
             let reason = "";
@@ -820,6 +821,8 @@
 
             const type = document.getElementById('ticketType').value;
             const reasonValue = document.getElementById('extraReason').value;
+            const issuerName = (document.getElementById('issuerName')?.value || '').trim();
+            const flightDate = document.getElementById('flightDate')?.value || null;
 
             const payload = {
                 ticket_num: rawTicketNum,
@@ -828,6 +831,8 @@
                 issue_date: document.getElementById('issueDate').value || null,
                 status_comment: document.getElementById('statusComment').value,
                 processed_by: activeProfile.full_name,
+                issuer_name: issuerName || null,
+                flight_date: flightDate,
                 
                 // Logic to route the reason to the specific column
                 reissue_reason: (type === "Re-issue") ? reasonValue : null,
@@ -840,11 +845,18 @@
             if (payload.status === "Refunded" || payload.status === "To be Refunded") {
                 payload.refund_by = document.getElementById('refundBy')?.value || null;
                 payload.refund_reason = document.getElementById('refundReason')?.value || null;
+            } else {
+                payload.refund_by = null;
+                payload.refund_reason = null;
             }
             if (payload.status === "Refunded") {
                 payload.refund_recipient = document.getElementById('refundRecipient')?.value || null;
                 payload.refund_date = document.getElementById('refundDate')?.value || null;
                 payload.refund_mode = document.getElementById('refundMode')?.value || null;
+            } else {
+                payload.refund_recipient = null;
+                payload.refund_date = null;
+                payload.refund_mode = null;
             }
             
             const { error } = await saudiaClient.from('tickets').insert([payload]);
@@ -854,8 +866,15 @@
                 document.getElementById('ticketType').value = 'Fresh Issue';
                 document.getElementById('ticketStatus').value = 'Flown';
                 document.getElementById('issueDate').value = '';
+                document.getElementById('issuerName').value = '';
+                document.getElementById('flightDate').value = '';
                 document.getElementById('extraReason').value = '';
                 document.getElementById('statusComment').value = '';
+                if (document.getElementById('refundRecipient')) document.getElementById('refundRecipient').value = '';
+                if (document.getElementById('refundDate')) document.getElementById('refundDate').value = '';
+                if (document.getElementById('refundMode')) document.getElementById('refundMode').value = '';
+                if (document.getElementById('refundBy')) document.getElementById('refundBy').value = '';
+                if (document.getElementById('refundReason')) document.getElementById('refundReason').value = '';
                 toggleDynamicFields();
                 getTickets();
             }
@@ -890,6 +909,8 @@
 
             const type = document.getElementById('ticketType').value;
             const reasonValue = document.getElementById('extraReason').value;
+            const issuerName = (document.getElementById('issuerName')?.value || '').trim();
+            const flightDate = document.getElementById('flightDate')?.value || null;
 
             const payload = {
                 ticket_num: rawTicketNum,
@@ -898,6 +919,8 @@
                 issue_date: document.getElementById('issueDate').value || null,
                 status_comment: document.getElementById('statusComment').value,
                 processed_by: activeProfile.full_name,
+                issuer_name: issuerName || null,
+                flight_date: flightDate,
                 
                 // Logic to route the reason to the specific column
                 reissue_reason: (type === "Re-issue") ? reasonValue : null,
@@ -958,12 +981,23 @@
             const ids = Array.from(document.querySelectorAll('.export-check:checked')).map(cb => cb.getAttribute('data-id'));
             if (!ids.length) return alert("Select tickets first.");
             
-            const toExport = ticketsList.filter(t => ids.includes(t.id.toString()));
+            const toExport = ticketsList.filter(t => ids.includes(String(t.id)));
             // Added Upgrade and Downgrade columns to headers
             let csv = "Ticket #,Type,Status,Date,Issuer,Upgrade Reason,Downgrade Reason,Comment,Staff\n";
             
             toExport.forEach(t => {
-                csv += `${t.ticket_num},${t.type},${t.status},${t.issue_date},${t.issuer_name},${t.upgrade_reason || ''},${t.downgrade_reason || ''},${t.status_comment || ''},${t.processed_by}\n`;
+                const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+                csv += [
+                    cell(t.ticket_num),
+                    cell(t.type),
+                    cell(t.status),
+                    cell(t.issue_date),
+                    cell(t.issuer_name),
+                    cell(t.upgrade_reason || ''),
+                    cell(t.downgrade_reason || ''),
+                    cell(t.status_comment || ''),
+                    cell(t.processed_by)
+                ].join(",") + "\n";
             });
             
             const blob = new Blob([csv], { type: 'text/csv' });
