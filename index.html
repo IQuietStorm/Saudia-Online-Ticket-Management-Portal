@@ -751,32 +751,40 @@
         async function ensureProfileForUser(user, fullNameMaybe) {
             if (!user?.id) return { data: null, error: new Error('Cannot create profile without user id') };
 
+            // Check if profile exists
             const { data: existingProfile, error: existingError } = await saudiaClient
                 .from('profiles')
-                .select('role')
+                .select('id')
                 .eq('id', user.id)
                 .single();
 
-            if (existingError && existingError.code !== 'PGRST116') {
-                console.warn('Unable to fetch existing profile role:', existingError);
+            // If profile already exists, do NOT update it (preserves admin-set roles)
+            if (existingProfile && !existingError) {
+                return { data: existingProfile, error: null };
             }
 
-            const base = {
-                id: user.id,
-                email: user.email || null,
-                full_name: (fullNameMaybe || user.user_metadata?.full_name || user.user_metadata?.fullName || '').trim() || null,
-                role: (existingProfile?.role || 'user')
-            };
+            // Only insert a new profile if it doesn't exist
+            if (existingError?.code === 'PGRST116') {
+                const base = {
+                    id: user.id,
+                    email: user.email || null,
+                    full_name: (fullNameMaybe || user.user_metadata?.full_name || user.user_metadata?.fullName || '').trim() || null,
+                    role: 'user'
+                };
 
-            // Upsert profile (requires the SQL policies/trigger provided in the next step)
-            const { data, error } = await saudiaClient
-                .from('profiles')
-                .upsert([base], { onConflict: 'id' });
+                const { data, error } = await saudiaClient
+                    .from('profiles')
+                    .insert([base]);
 
-            if (error) {
-                console.warn('Profile upsert failed (check RLS/trigger):', error);
+                if (error) {
+                    console.warn('Profile insert failed (check RLS/trigger):', error);
+                }
+                return { data, error };
             }
-            return { data, error };
+
+            // Some other error occurred
+            console.warn('Profile check error:', existingError);
+            return { data: null, error: existingError };
         }
 
         async function handleAuth() {
