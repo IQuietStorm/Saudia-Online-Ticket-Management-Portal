@@ -603,26 +603,24 @@
     
     try {
         const payload = {
-            // snake_case (what your UI originally used)
+            // snake_case (matches SQL variable names)
             email,
             password,
             full_name: name,
-            user_role: role,
-            // common camelCase variants (what many functions expect)
-            fullName: name,
-            role,
-            userRole: role
+            user_role: role
         };
 
         const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['create_user_by_admin', 'create-user'], {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: payload
+            body: JSON.stringify(payload)
         });
         
         if (error) {
             console.error('Create user error:', { functionName, error, data });
-            return alert("Error creating user: " + formatEdgeFunctionError(error));
+            const msg = formatEdgeFunctionError(error);
+            console.error('Formatted error:', msg);
+            return alert("Error creating user: " + msg);
         }
         
         alert('User created successfully!');
@@ -642,16 +640,19 @@
     if (!confirm("Are you sure you want to delete this user?")) return;
     
     try {
-        // Calls Supabase Edge Function: `delete-user`
-        const { data, error } = await saudiaClient.functions.invoke('delete-user', {
+        const payload = { user_id: userId };
+        
+        const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['delete_user_by_admin', 'delete-user'], {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: { user_id: userId }
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(payload)
         });
         
         if (error) {
-            console.error('Delete user error:', error, data);
-            return alert("Error deleting user: " + formatEdgeFunctionError(error));
+            console.error('Delete user error:', { functionName, error, data });
+            const msg = formatEdgeFunctionError(error);
+            console.error('Formatted error:', msg);
+            return alert("Error deleting user: " + msg);
         }
         
         alert('User deleted successfully!');
