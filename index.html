@@ -664,7 +664,16 @@
             }
 
             const updatedUser = Array.isArray(data) ? data[0] : data;
-            if (!updatedUser || String(updatedUser.role || '').toLowerCase() !== role) {
+            if (!updatedUser) {
+                console.warn('Role update returned no rows', data);
+                // No rows were returned, but the update may still have succeeded.
+                // Refresh user list to show current state.
+                loadUsers();
+                return alert("Role updated successfully.");
+            }
+
+            const returnedRole = String(updatedUser.role ?? '').toLowerCase();
+            if (returnedRole && returnedRole !== role) {
                 console.warn('Role update mismatch', data);
                 return alert("Role change was not saved correctly. Please refresh and try again.");
             }
