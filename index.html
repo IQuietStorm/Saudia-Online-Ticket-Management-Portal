@@ -987,6 +987,19 @@
                 row.className = cls;
                 row.innerHTML = `<td><input type="checkbox" class="export-check" data-id="${escapeHtml(t.id)}"></td><td>${escapeHtml(t.ticket_num || '')}</td><td>${escapeHtml(t.type || '')}</td><td>${escapeHtml(t.status || '')}</td><td>${escapeHtml(t.issue_date || '-')}</td><td>${escapeHtml(t.processed_by || '')}</td>`;
                 row.onclick = (e) => { if(e.target.type !== 'checkbox') selectTicket(t, row); };
+
+                const checkbox = row.querySelector('.export-check');
+                if (checkbox) {
+                    checkbox.addEventListener('change', (e) => {
+                        if (e.target.checked) {
+                            selectTicket(t, row);
+                        } else if (selectedTicketId === t.id) {
+                            selectedTicketId = null;
+                            row.classList.remove('is-selected');
+                        }
+                    });
+                }
+
                 if (selectedTicketId && t.id === selectedTicketId) row.classList.add('is-selected');
             });
         }
@@ -1168,7 +1181,18 @@
 
         async function deleteTicket() {
             if (!activeProfile || !canEditTickets()) return alert("Supervisor/Admin only.");
-            if (!selectedTicketId) return alert("Select a ticket row first.");
+
+            if (!selectedTicketId) {
+                const checked = Array.from(document.querySelectorAll('.export-check:checked')).map(cb => cb.getAttribute('data-id')).filter(Boolean);
+                if (checked.length === 1) {
+                    selectedTicketId = checked[0];
+                } else if (checked.length > 1) {
+                    return alert("Select exactly one ticket row to delete, or click the ticket row first.");
+                } else {
+                    return alert("Select a ticket row first.");
+                }
+            }
+
             if (!confirm("Delete this ticket permanently?")) return;
 
             const { error } = await saudiaClient.from('tickets').delete().eq('id', selectedTicketId);
