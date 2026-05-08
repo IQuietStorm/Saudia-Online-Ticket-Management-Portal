@@ -572,7 +572,25 @@
             if (typeof status === 'number') parts.push(`HTTP ${status}`);
             if (error?.message) parts.push(error.message);
             if (body) parts.push(typeof body === 'string' ? body : JSON.stringify(body));
+            // Helpful hint for the common "Failed to send a request..." case
+            if ((error?.message || '').includes('Failed to send a request to the Edge Function')) {
+                parts.push('Likely causes: function not deployed/name mismatch, CORS/OPTIONS not handled in the function, blocked network/DNS/proxy.');
+            }
             return parts.filter(Boolean).join(" - ") || "Unknown error";
+        }
+
+        async function invokeEdgeFunctionWithFallback(functionNames, options) {
+            let last = null;
+            for (const fn of functionNames) {
+                try {
+                    const res = await saudiaClient.functions.invoke(fn, options);
+                    if (!res?.error) return { ...res, functionName: fn };
+                    last = { ...res, functionName: fn };
+                } catch (e) {
+                    last = { data: null, error: e, functionName: fn };
+                }
+            }
+            return last || { data: null, error: new Error('Unknown Edge Function error'), functionName: functionNames?.[0] };
         }
 
         async function createNewUser() {
@@ -584,9 +602,9 @@
     if (!name || !email || !password) return alert("All fields are required.");
     
     try {
-        const { data, error } = await saudiaClient.functions.invoke('create_user_by_admin', {
+        const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['create_user_by_admin', 'create-user'], {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: {
                 email,
                 password,
@@ -596,7 +614,7 @@
         });
         
         if (error) {
-            console.error('Create user error:', error, data);
+            console.error('Create user error:', { functionName, error, data });
             return alert("Error creating user: " + formatEdgeFunctionError(error));
         }
         
@@ -895,9 +913,9 @@
         }
 
         async function adminCreateUser(newEmail, newPassword, newName, newRole) {
-    const { data, error } = await saudiaClient.functions.invoke('create_user_by_admin', {
+    const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['create_user_by_admin', 'create-user'], {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: {
             email: newEmail,
             password: newPassword,
@@ -907,7 +925,7 @@
     });
 
     if (error) {
-        console.error('Admin create user error:', error, data);
+        console.error('Admin create user error:', { functionName, error, data });
         alert("Error creating user: " + formatEdgeFunctionError(error));
     } else {
         alert("Account successfully created for " + newName);
