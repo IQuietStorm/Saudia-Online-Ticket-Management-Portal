@@ -564,6 +564,17 @@
             });
         }
 
+        function formatEdgeFunctionError(error) {
+            // Supabase Functions errors often include status/body in `context`.
+            const status = error?.context?.status;
+            const body = error?.context?.body;
+            const parts = [];
+            if (typeof status === 'number') parts.push(`HTTP ${status}`);
+            if (error?.message) parts.push(error.message);
+            if (body) parts.push(typeof body === 'string' ? body : JSON.stringify(body));
+            return parts.filter(Boolean).join(" - ") || "Unknown error";
+        }
+
         async function createNewUser() {
     const name = document.getElementById('newUserName').value.trim();
     const email = document.getElementById('newUserEmail').value.trim();
@@ -575,17 +586,18 @@
     try {
         const { data, error } = await saudiaClient.functions.invoke('create_user_by_admin', {
             method: 'POST',
-            body: JSON.stringify({
-                email: email,
-                password: password,
+            headers: { 'Content-Type': 'application/json' },
+            body: {
+                email,
+                password,
                 full_name: name,
                 user_role: role
-            })
+            }
         });
         
         if (error) {
             console.error('Create user error:', error, data);
-            return alert("Error creating user: " + (error.message || 'Unable to complete the request.'));
+            return alert("Error creating user: " + formatEdgeFunctionError(error));
         }
         
         alert('User created successfully!');
@@ -607,12 +619,13 @@
     try {
         const { data, error } = await saudiaClient.functions.invoke('delete_user_by_admin', {
             method: 'POST',
-            body: JSON.stringify({ user_id: userId })
+            headers: { 'Content-Type': 'application/json' },
+            body: { user_id: userId }
         });
         
         if (error) {
             console.error('Delete user error:', error, data);
-            return alert("Error deleting user: " + (error.message || 'Unable to complete the request.'));
+            return alert("Error deleting user: " + formatEdgeFunctionError(error));
         }
         
         alert('User deleted successfully!');
@@ -883,17 +896,18 @@
         async function adminCreateUser(newEmail, newPassword, newName, newRole) {
     const { data, error } = await saudiaClient.functions.invoke('create_user_by_admin', {
         method: 'POST',
-        body: JSON.stringify({
+        headers: { 'Content-Type': 'application/json' },
+        body: {
             email: newEmail,
             password: newPassword,
             full_name: newName,
             user_role: newRole
-        })
+        }
     });
 
     if (error) {
         console.error('Admin create user error:', error, data);
-        alert("Error creating user: " + (error.message || 'Unable to complete the request.'));
+        alert("Error creating user: " + formatEdgeFunctionError(error));
     } else {
         alert("Account successfully created for " + newName);
     }
