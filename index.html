@@ -764,11 +764,21 @@
         async function ensureProfileForUser(user, fullNameMaybe) {
             if (!user?.id) return;
 
+            const { data: existingProfile, error: existingError } = await saudiaClient
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+            if (existingError && existingError.code !== 'PGRST116') {
+                console.warn('Unable to fetch existing profile role:', existingError);
+            }
+
             const base = {
                 id: user.id,
                 email: user.email || null,
                 full_name: (fullNameMaybe || user.user_metadata?.full_name || user.user_metadata?.fullName || '').trim() || null,
-                role: 'user'
+                role: (existingProfile?.role || 'user')
             };
 
             // Upsert profile (requires the SQL policies/trigger provided in the next step)
