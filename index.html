@@ -706,7 +706,9 @@
         
         if (error) {
             console.error('Create user error:', { functionName, error, data });
-                const msg = formatRpcError(error);
+            const msg = formatRpcError(error);
+            console.error('Formatted error:', msg);
+            return alert("Error creating user: " + msg);
         }
         
         alert('User created successfully!');
@@ -732,7 +734,9 @@
         
         if (error) {
             console.error('Delete user error:', { functionName, error, data });
-                const msg = formatRpcError(error);
+            const msg = formatRpcError(error);
+            console.error('Formatted error:', msg);
+            return alert("Error deleting user: " + msg);
         }
         
         alert('User deleted successfully!');
@@ -745,7 +749,7 @@
 }
 
         async function ensureProfileForUser(user, fullNameMaybe) {
-            if (!user?.id) return;
+            if (!user?.id) return { data: null, error: new Error('Cannot create profile without user id') };
 
             const { data: existingProfile, error: existingError } = await saudiaClient
                 .from('profiles')
@@ -765,13 +769,14 @@
             };
 
             // Upsert profile (requires the SQL policies/trigger provided in the next step)
-            const { error } = await saudiaClient
+            const { data, error } = await saudiaClient
                 .from('profiles')
                 .upsert([base], { onConflict: 'id' });
 
             if (error) {
                 console.warn('Profile upsert failed (check RLS/trigger):', error);
             }
+            return { data, error };
         }
 
         async function handleAuth() {
@@ -795,7 +800,12 @@
 
                 // If email confirmations are ON, user may need to confirm before session is available.
                 const createdUser = data?.user;
-                await ensureProfileForUser(createdUser, fullName);
+                const profileResult = await ensureProfileForUser(createdUser, fullName);
+
+                if (profileResult.error) {
+                    console.error('Profile creation failed:', profileResult.error);
+                    return alert("Account created, but profile creation failed: " + profileResult.error.message);
+                }
 
                 alert("Account created. If email confirmation is enabled, please check your email to confirm before signing in.");
                 setAuthMode('signin');
