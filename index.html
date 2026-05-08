@@ -661,33 +661,29 @@
             loadUsers();
         }
 
-        function formatEdgeFunctionError(error) {
-            // Supabase Functions errors often include status/body in `context`.
+        function formatRpcError(error) {
+            // Supabase RPC errors often include status/body in `context`.
             const status = error?.context?.status;
             const body = error?.context?.body;
             const parts = [];
             if (typeof status === 'number') parts.push(`HTTP ${status}`);
             if (error?.message) parts.push(error.message);
             if (body) parts.push(typeof body === 'string' ? body : JSON.stringify(body));
-            // Helpful hint for the common "Failed to send a request..." case
-            if ((error?.message || '').includes('Failed to send a request to the Edge Function')) {
-                parts.push('Likely causes: function not deployed/name mismatch, CORS/OPTIONS not handled in the function, blocked network/DNS/proxy.');
-            }
             return parts.filter(Boolean).join(" - ") || "Unknown error";
         }
 
-        async function invokeEdgeFunctionWithFallback(functionNames, options) {
+        async function invokeRpcWithFallback(functionNames, params) {
             let last = null;
             for (const fn of functionNames) {
                 try {
-                    const res = await saudiaClient.functions.invoke(fn, options);
+                    const res = await saudiaClient.rpc(fn, params);
                     if (!res?.error) return { ...res, functionName: fn };
                     last = { ...res, functionName: fn };
                 } catch (e) {
                     last = { data: null, error: e, functionName: fn };
                 }
             }
-            return last || { data: null, error: new Error('Unknown Edge Function error'), functionName: functionNames?.[0] };
+            return last || { data: null, error: new Error('Unknown RPC function error'), functionName: functionNames?.[0] };
         }
 
         async function createNewUser() {
@@ -700,24 +696,17 @@
     
     try {
         const payload = {
-            // snake_case (matches SQL variable names)
             email,
             password,
             full_name: name,
             user_role: role
         };
 
-        const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['create_user_by_admin', 'create-user'], {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        const { data, error, functionName } = await invokeRpcWithFallback(['create_user_by_admin', 'create_user'], payload);
         
         if (error) {
             console.error('Create user error:', { functionName, error, data });
-            const msg = formatEdgeFunctionError(error);
-            console.error('Formatted error:', msg);
-            return alert("Error creating user: " + msg);
+                const msg = formatRpcError(error);
         }
         
         alert('User created successfully!');
@@ -739,17 +728,11 @@
     try {
         const payload = { user_id: userId };
         
-        const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['delete_user_by_admin', 'delete-user'], {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        const { data, error, functionName } = await invokeRpcWithFallback(['delete_user_by_admin', 'delete_user'], payload);
         
         if (error) {
             console.error('Delete user error:', { functionName, error, data });
-            const msg = formatEdgeFunctionError(error);
-            console.error('Formatted error:', msg);
-            return alert("Error deleting user: " + msg);
+                const msg = formatRpcError(error);
         }
         
         alert('User deleted successfully!');
@@ -1088,15 +1071,11 @@
         user_role: newRole
     };
 
-    const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['create_user_by_admin', 'create-user'], {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(payload)
-    });
+    const { data, error, functionName } = await invokeRpcWithFallback(['create_user_by_admin', 'create_user'], payload);
 
     if (error) {
         console.error('Admin create user error:', { functionName, error, data });
-        alert("Error creating user: " + formatEdgeFunctionError(error));
+        alert("Error creating user: " + formatRpcError(error));
     } else {
         alert("Account successfully created for " + newName);
     }
