@@ -247,11 +247,22 @@
                 <h1 style="color: var(--islamic-green); margin:0;">SAUDI AIRLINE</h1>
             </div>
             <p id="auth-title" style="color: var(--saudia-gold); font-weight: bold;">CLOUD TMS LOGIN</p>
-            <input type="text" id="email" placeholder="Username/Email">
-            <input type="password" id="password" placeholder="Password">
+
+            <div class="toggle-row" style="justify-content:center; margin: 10px 0 18px;">
+                <button id="auth-signin-btn" class="mini-btn alt" onclick="setAuthMode('signin')">Sign In</button>
+                <button id="auth-signup-btn" class="mini-btn" onclick="setAuthMode('signup')">Create Account</button>
+            </div>
+
+            <div id="signup-fields" style="display:none; text-align:left;">
+                <label>Full Name</label>
+                <input type="text" id="signupFullName" placeholder="Your full name">
+            </div>
+
+            <input type="email" id="email" placeholder="Email address" autocomplete="email">
+            <input type="password" id="password" placeholder="Password" autocomplete="current-password">
             <button onclick="handleAuth()" id="main-auth-btn" style="width:100%">Sign In</button>
             <br><button onclick="handleForgotPassword()" style="background:#666; width:100%; margin-top:10px;">Forgotten Password?</button>
-            <br><br><span style="font-size:12px; color:var(--muted-text);">Contact system administrator for account creation</span>
+            <br><br><span id="auth-hint" style="font-size:12px; color:var(--muted-text);">Sign in to access your tickets.</span>
         </div>
     </div>
 
@@ -287,6 +298,7 @@
                     <label>Role</label>
                     <select id="newUserRole">
                         <option value="user">User</option>
+                        <option value="supervisor">Supervisor</option>
                         <option value="admin">Admin</option>
                     </select>
                     <button onclick="createNewUser()" style="width:100%; margin-top:15px;">Create User</button>
@@ -479,6 +491,21 @@
 
         let activeUser, activeProfile, ticketsList = [], selectedTicketId = null;
         let visibleTickets = [];
+        let authMode = 'signin'; // 'signin' | 'signup'
+
+        function hasRole(role) {
+            const r = (activeProfile?.role || 'user').toLowerCase();
+            return r === role;
+        }
+
+        function canEditTickets() {
+            const r = (activeProfile?.role || 'user').toLowerCase();
+            return r === 'admin' || r === 'supervisor';
+        }
+
+        function canManageUsers() {
+            return hasRole('admin');
+        }
 
         async function initAuth() {
             const { data, error } = await saudiaClient.auth.getSession();
@@ -500,6 +527,8 @@
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('email').value = '';
             document.getElementById('password').value = '';
+            if (document.getElementById('signupFullName')) document.getElementById('signupFullName').value = '';
+            setAuthMode('signin');
         }
 
         function applyUiPrefs() {
@@ -539,7 +568,39 @@
             // In production, this would send a real password reset email
         }
 
+        function setAuthMode(mode) {
+            authMode = mode === 'signup' ? 'signup' : 'signin';
+
+            const isSignup = authMode === 'signup';
+            const signupFields = document.getElementById('signup-fields');
+            if (signupFields) signupFields.style.display = isSignup ? 'block' : 'none';
+
+            const title = document.getElementById('auth-title');
+            if (title) title.textContent = isSignup ? 'CREATE ACCOUNT' : 'CLOUD TMS LOGIN';
+
+            const mainBtn = document.getElementById('main-auth-btn');
+            if (mainBtn) mainBtn.textContent = isSignup ? 'Create Account' : 'Sign In';
+
+            const hint = document.getElementById('auth-hint');
+            if (hint) hint.textContent = isSignup
+                ? 'New accounts are created as User by default. Admin can later upgrade roles.'
+                : 'Sign in to access your tickets.';
+
+            const signInBtn = document.getElementById('auth-signin-btn');
+            const signUpBtn = document.getElementById('auth-signup-btn');
+            if (signInBtn && signUpBtn) {
+                if (isSignup) {
+                    signInBtn.classList.remove('alt');
+                    signUpBtn.classList.add('alt');
+                } else {
+                    signInBtn.classList.add('alt');
+                    signUpBtn.classList.remove('alt');
+                }
+            }
+        }
+
         function toggleAdminDashboard() {
+            if (!canManageUsers()) return alert("Admin only.");
             const adminDash = document.getElementById('admin-dashboard');
             const ticketsCont = document.getElementById('tickets-container');
             
@@ -554,20 +615,50 @@
         }
 
         async function loadUsers() {
-            const { data } = await saudiaClient.from('profiles').select('*');
+            const { data, error } = await saudiaClient.from('profiles').select('id, full_name, email, role');
+            if (error) {
+                console.error('Load users error:', error);
+                alert("Unable to load users. Check RLS policies for `profiles`.");
+                return;
+            }
             const body = document.getElementById('usersTableBody');
             body.innerHTML = '';
             
             (data || []).forEach(user => {
                 const row = body.insertRow();
-                const deleteBtn = document.createElement('button');
-                deleteBtn.style.cssText = 'background:#b22222; padding:5px 10px; font-size:11px;';
-                deleteBtn.textContent = 'Delete';
-                deleteBtn.onclick = () => deleteUser(user.id);
-                
-                row.innerHTML = `<td>${escapeHtml(user.full_name)}</td><td>${escapeHtml(user.email || '-')}</td><td>${escapeHtml(user.role)}</td><td></td>`;
-                row.cells[3].appendChild(deleteBtn);
+                const role = String(user.role || 'user').toLowerCase();
+                const roleSelId = `role_${user.id}`;
+
+                row.innerHTML = `
+                    <td>${escapeHtml(user.full_name || '')}</td>
+                    <td>${escapeHtml(user.email || '-')}</td>
+                    <td>
+                        <select id="${escapeHtml(roleSelId)}" style="padding:6px; border-radius:10px;">
+                            <option value="user" ${role === 'user' ? 'selected' : ''}>User</option>
+                            <option value="supervisor" ${role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+                            <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
+                        </select>
+                    </td>
+                    <td style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button onclick="updateUserRole('${user.id}', document.getElementById('${escapeHtml(roleSelId)}').value)" style="background:#8E713E; padding:5px 10px; font-size:11px;">Save</button>
+                        <button onclick="deleteUser('${user.id}')" style="background:#b22222; padding:5px 10px; font-size:11px;">Delete</button>
+                    </td>
+                `;
             });
+        }
+
+        async function updateUserRole(userId, newRole) {
+            if (!canManageUsers()) return alert("Admin only.");
+            const role = String(newRole || '').toLowerCase();
+            if (!['user', 'supervisor', 'admin'].includes(role)) return alert("Invalid role.");
+
+            const { error } = await saudiaClient.from('profiles').update({ role }).eq('id', userId);
+            if (error) {
+                console.error('Update role error:', error);
+                return alert("Error updating role: " + error.message);
+            }
+            alert("Role updated successfully.");
+            loadUsers();
         }
 
         function formatEdgeFunctionError(error) {
@@ -669,28 +760,81 @@
         alert("System Error: " + err.message);
     }
 }
+
+        async function ensureProfileForUser(user, fullNameMaybe) {
+            if (!user?.id) return;
+
+            const base = {
+                id: user.id,
+                email: user.email || null,
+                full_name: (fullNameMaybe || user.user_metadata?.full_name || user.user_metadata?.fullName || '').trim() || null,
+                role: 'user'
+            };
+
+            // Upsert profile (requires the SQL policies/trigger provided in the next step)
+            const { error } = await saudiaClient
+                .from('profiles')
+                .upsert([base], { onConflict: 'id' });
+
+            if (error) {
+                console.warn('Profile upsert failed (check RLS/trigger):', error);
+            }
+        }
+
         async function handleAuth() {
-            const emailIn = document.getElementById('email').value.trim();
-            const email = emailIn.includes('@') ? emailIn : emailIn + "@saudia-tms.com";
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
-            
+
+            if (!email || !email.includes('@')) return alert("Please enter a valid email address.");
+            if (!password) return alert("Please enter your password.");
+
+            if (authMode === 'signup') {
+                const fullName = (document.getElementById('signupFullName')?.value || '').trim();
+                if (!fullName) return alert("Please enter your full name.");
+
+                const { data, error } = await saudiaClient.auth.signUp({
+                    email,
+                    password,
+                    options: { data: { full_name: fullName } }
+                });
+
+                if (error) return alert(error.message);
+
+                // If email confirmations are ON, user may need to confirm before session is available.
+                const createdUser = data?.user;
+                await ensureProfileForUser(createdUser, fullName);
+
+                alert("Account created. If email confirmation is enabled, please check your email to confirm before signing in.");
+                setAuthMode('signin');
+                document.getElementById('password').value = '';
+                return;
+            }
+
             const { data, error } = await saudiaClient.auth.signInWithPassword({ email, password });
             if (error) return alert(error.message);
-            activeUser = data.user; 
+            activeUser = data.user;
             loadApp();
         }
 
         async function loadApp() {
+            await ensureProfileForUser(activeUser);
             const { data } = await saudiaClient.from('profiles').select('*').eq('id', activeUser.id).single();
-            activeProfile = data;
+            activeProfile = data || { id: activeUser.id, full_name: activeUser.email, role: 'user' };
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
-            document.getElementById('display-name').innerText = activeProfile.full_name;
-            if (activeProfile.role === 'admin') {
-                document.getElementById('admin-upd').style.display = 'inline-block';
-                document.getElementById('admin-del').style.display = 'inline-block';
-                document.getElementById('admin-dash-btn').style.display = 'inline-block';
-            }
+            const roleLabel = (activeProfile.role || 'user').toUpperCase();
+            document.getElementById('display-name').innerText = `${activeProfile.full_name || activeUser.email} (${roleLabel})`;
+
+            // Ticket permissions: Supervisor/Admin can update/delete
+            const updBtn = document.getElementById('admin-upd');
+            const delBtn = document.getElementById('admin-del');
+            const canEdit = canEditTickets();
+            if (updBtn) updBtn.style.display = canEdit ? 'inline-block' : 'none';
+            if (delBtn) delBtn.style.display = canEdit ? 'inline-block' : 'none';
+
+            // User management: Admin only
+            const adminDashBtn = document.getElementById('admin-dash-btn');
+            if (adminDashBtn) adminDashBtn.style.display = canManageUsers() ? 'inline-block' : 'none';
             getTickets();
         }
 
@@ -949,7 +1093,7 @@
 }
 
         async function updateTicket() {
-            if (!activeProfile || activeProfile.role !== 'admin') return alert("Admin only.");
+            if (!activeProfile || !canEditTickets()) return alert("Supervisor/Admin only.");
             if (!selectedTicketId) return alert("Select a ticket row first.");
 
             const rawTicketNum = (document.getElementById('ticketNum').value || '').trim();
@@ -1003,7 +1147,7 @@
         }
 
         async function deleteTicket() {
-            if (!activeProfile || activeProfile.role !== 'admin') return alert("Admin only.");
+            if (!activeProfile || !canEditTickets()) return alert("Supervisor/Admin only.");
             if (!selectedTicketId) return alert("Select a ticket row first.");
             if (!confirm("Delete this ticket permanently?")) return;
 
@@ -1058,6 +1202,7 @@
         }
 
         applyUiPrefs();
+        setAuthMode('signin');
         initAuth();
     </script>
 </body>
