@@ -5,14 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saudi Airline - Cloud TMS</title>
     <link rel="icon" type="image/png" href="logo.png">
-    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { 
-            --islamic-green: #009000; 
-            --saudia-gold: #8E713E; 
-            --flown-bg: #D1F2EB; 
-            --refund-bg: #FADBD8; 
+        :root {
+            --islamic-green: #009000;
+            --saudia-gold: #8E713E;
+            --flown-bg: #D1F2EB;
+            --refund-bg: #FADBD8;
             --na-bg: #f0f0f0;
             --body-bg: #f0f2f0;
             --card-bg: #ffffff;
@@ -28,7 +27,6 @@
             --surface-3: rgba(0,0,0,0.06);
         }
 
-        /* NIGHT MODE COLORS */
         [data-theme="dark"] {
             --body-bg: #1a1a1a;
             --card-bg: #2d2d2d;
@@ -44,33 +42,43 @@
         }
 
         * { box-sizing: border-box; }
-        body { 
-            font-family: ui-serif, Georgia, "Times New Roman", serif; 
-            margin: 0; 
-            background-color: var(--body-bg); 
-            color: var(--text-main); 
+        body {
+            margin: 0;
+            background-color: var(--body-bg);
+            color: var(--text-main);
+            font-family: ui-serif, Georgia, "Times New Roman", serif;
             transition: background-color 0.25s ease, color 0.25s ease;
         }
-        
-        #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-        .login-box { 
-            background: var(--card-bg); 
-            padding: 38px; 
-            border-radius: var(--radius-2); 
-            box-shadow: var(--shadow-2); 
-            text-align: center; 
-            width: 100%; 
-            max-width: 420px; 
-            border-top: 6px solid var(--islamic-green);
+
+        #login-screen {
+            display: flex;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
+
+        .login-box {
+            width: 100%;
+            max-width: 420px;
+            padding: 38px;
+            border-radius: var(--radius-2);
+            background: var(--card-bg);
+            box-shadow: var(--shadow-2);
+            border-top: 6px solid var(--islamic-green);
+            text-align: center;
+        }
+
         .login-brand {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
-            margin-bottom: 10px;
+            margin-bottom: 16px;
         }
-        .login-logo {
+
+        .login-logo,
+        .title-logo {
             width: 44px;
             height: 44px;
             border-radius: 10px;
@@ -78,125 +86,147 @@
             padding: 6px;
             object-fit: contain;
         }
-        
-        #main-app { 
-            display: none; 
-            width: 100%; 
-            max-width: 1200px; 
-            background: var(--card-bg); 
-            min-height: 90vh; 
-            border-radius: var(--radius-2); 
-            box-shadow: var(--shadow-1); 
-            overflow: hidden; 
+
+        #main-app {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
             margin: 20px auto;
+            min-height: 90vh;
+            border-radius: var(--radius-2);
+            background: var(--card-bg);
+            box-shadow: var(--shadow-1);
+            overflow: hidden;
         }
-        
-        /* HEADER STYLING */
-        header { 
-            background-color: var(--card-bg); 
-            padding: 10px 25px; 
+
+        header {
+            padding: 10px 25px;
             border-top: 6px solid var(--islamic-green);
-            border-bottom: 4px solid var(--saudia-gold); 
-            display: flex; 
-            align-items: center; 
-            position: relative; 
-            min-height: 90px;
+            border-bottom: 4px solid var(--saudia-gold);
+            display: flex;
             flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 90px;
+            background: var(--card-bg);
         }
-        
-        .logo-box { width: 80px; height: 60px; display: flex; align-items: center; justify-content: center; margin-right: 18px; }
-        .header-logo { max-height: 100%; max-width: 100%; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.10)); }
 
         .header-title {
-            flex-grow: 1;
-            color: var(--islamic-green);
-            letter-spacing: 2px;
-            font-size: 1.8em;
-            font-weight: bold;
-            text-transform: uppercase;
-            text-align: center;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
+            flex: 1;
+            color: var(--islamic-green);
+            font-size: 1.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
         }
-        .title-logo {
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
-            background: var(--surface-2);
-            padding: 5px;
-            object-fit: contain;
+
+        .header-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
         }
-        
-        .header-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-        .user-info { font-family: ui-sans-serif, Arial, sans-serif; font-size: 0.85em; color: var(--text-main); }
-        
-        /* HEADER TOGGLES */
-        .toggle-row { display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
-        .mini-btn { 
-            background: var(--saudia-gold); 
-            font-size: 10px; 
-            padding: 7px 10px; 
-            border-radius: 999px; 
+
+        .user-info {
+            font-family: ui-sans-serif, Arial, sans-serif;
+            font-size: 0.85em;
+            color: var(--text-main);
+        }
+
+        .toggle-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .mini-btn {
+            padding: 7px 10px;
+            border: none;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: bold;
             letter-spacing: 0.4px;
+            color: white;
+            cursor: pointer;
+            background: var(--saudia-gold);
         }
+
         .mini-btn.alt { background: var(--islamic-green); }
 
-        /* UI ELEMENTS */
-        .container { padding: 22px; font-family: ui-sans-serif, Arial, sans-serif; }
-        input, select { 
-            width: 100%; 
-            padding: 12px; 
-            border: 1px solid var(--input-border); 
-            margin-bottom: 10px; 
-            border-radius: var(--radius-1); 
-            background: var(--card-bg); 
-            color: var(--text-main); 
-            font-size: 16px; 
-            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
+        .container {
+            padding: 22px;
+            font-family: ui-sans-serif, Arial, sans-serif;
         }
-        input:focus, select:focus { outline: none; border-color: var(--islamic-green); box-shadow: var(--focus-ring); }
-        .dynamic-section { background: var(--surface-2); padding: 16px; border-left: 4px solid var(--saudia-gold); margin-bottom: 15px; border-radius: var(--radius-1); }
-        .btn-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-        button { 
-            padding: 12px 20px; 
-            border: none; 
-            cursor: pointer; 
-            font-weight: bold; 
-            text-transform: uppercase; 
-            color: white; 
-            border-radius: 999px; 
-            background: var(--islamic-green); 
-            transition: transform 0.12s ease, filter 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius-1);
+            box-shadow: var(--shadow-1);
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid var(--input-border);
+            border-radius: var(--radius-1);
+            background: var(--card-bg);
+            color: var(--text-main);
+            font-size: 16px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--islamic-green);
+            box-shadow: var(--focus-ring);
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            background: var(--islamic-green);
+            border-radius: 999px;
+            font-weight: bold;
+            text-transform: uppercase;
             box-shadow: 0 10px 18px rgba(0,0,0,0.10);
+            transition: transform 0.12s ease, filter 0.2s ease;
         }
+
         button:hover { filter: brightness(1.05); transform: translateY(-1px); }
         button:active { transform: translateY(0px) scale(0.99); }
         button:focus-visible { outline: none; box-shadow: var(--focus-ring), 0 10px 18px rgba(0,0,0,0.10); }
+
         .btn-update { background: var(--saudia-gold); display: none; }
         .btn-delete { background: #b22222; display: none; }
-        
-        /* TABLE STYLING */
+        .btn-secondary { background: #666; }
+
         .table-wrap { overflow-x: auto; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 600px; }
-        th { background: var(--surface-3); color: var(--islamic-green); text-align: left; padding: 12px; border-bottom: 2px solid var(--saudia-gold); position: sticky; top: 0; backdrop-filter: blur(8px); }
+        table { width: 100%; border-collapse: collapse; min-width: 620px; font-size: 13px; }
+        th { background: var(--surface-3); color: var(--islamic-green); text-align: left; padding: 12px; border-bottom: 2px solid var(--saudia-gold); position: sticky; top: 0; }
         td { padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.10); }
-        tbody tr { transition: transform 0.12s ease, filter 0.2s ease, box-shadow 0.2s ease; cursor: pointer; }
+        tbody tr { transition: transform 0.12s ease, filter 0.2s ease; cursor: pointer; }
         tbody tr:hover { filter: brightness(1.01); }
         tbody tr.is-selected { outline: 2px solid rgba(142, 113, 62, 0.55); outline-offset: -2px; }
-        
         .row-flown { background-color: var(--flown-bg) !important; }
         .row-refund { background-color: var(--refund-bg) !important; }
         .row-na { background-color: var(--na-bg) !important; }
-        label { font-size: 11px; font-weight: bold; color: var(--saudia-gold); display: block; margin-bottom: 2px; letter-spacing: 0.3px; }
-        #auth-toggle { color: var(--muted-text); }
-        #auth-toggle:hover { color: var(--text-main); }
 
-        /* MOBILE RESPONSIVE GRID */
+        label { font-size: 11px; font-weight: bold; color: var(--saudia-gold); display: block; margin-bottom: 4px; letter-spacing: 0.3px; }
+        .muted { color: var(--muted-text); font-size: 12px; }
         .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-        /* FILTER + SORT BAR */
         .filter-bar {
             margin-top: 18px;
             padding: 14px;
@@ -208,28 +238,25 @@
             gap: 12px;
             align-items: end;
         }
-        [data-theme="dark"] .filter-bar { border-color: rgba(255,255,255,0.08); }
+
         .filter-item label { margin-bottom: 6px; }
         .filter-item input, .filter-item select { margin-bottom: 0; }
         .filter-actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
         .filter-actions .mini-btn { padding: 10px 12px; font-size: 11px; }
-        .muted { color: var(--muted-text); font-size: 12px; }
 
         @media (max-width: 768px) {
             .input-grid { grid-template-columns: 1fr; }
             .header-title { font-size: 1.2em; order: 3; width: 100%; margin-top: 10px; }
             #main-app { margin: 0; border-radius: 0; min-height: 100vh; }
             header { justify-content: space-between; }
-            .logo-box { margin-right: 0; }
             .container { padding: 16px; }
-            button { width: 100%; justify-content: center; }
+            button { width: 100%; }
             .btn-row { gap: 8px; }
             .filter-bar { grid-template-columns: 1fr; }
             .filter-actions { justify-content: stretch; }
             .filter-actions .mini-btn { width: 100%; }
         }
 
-        /* MANUAL "MOBILE VIEW" TOGGLE (forces compact layout) */
         [data-layout="mobile"] #main-app { margin: 0; border-radius: 0; min-height: 100vh; }
         [data-layout="mobile"] .input-grid { grid-template-columns: 1fr; }
         [data-layout="mobile"] .container { padding: 16px; }
@@ -247,22 +274,21 @@
                 <h1 style="color: var(--islamic-green); margin:0;">SAUDI AIRLINE</h1>
             </div>
             <p id="auth-title" style="color: var(--saudia-gold); font-weight: bold;">CLOUD TMS LOGIN</p>
-
             <div class="toggle-row" style="justify-content:center; margin: 10px 0 18px;">
                 <button id="auth-signin-btn" class="mini-btn alt" onclick="setAuthMode('signin')">Sign In</button>
                 <button id="auth-signup-btn" class="mini-btn" onclick="setAuthMode('signup')">Create Account</button>
             </div>
-
             <div id="signup-fields" style="display:none; text-align:left;">
                 <label>Full Name</label>
                 <input type="text" id="signupFullName" placeholder="Your full name">
             </div>
-
             <input type="email" id="email" placeholder="Email address" autocomplete="email">
             <input type="password" id="password" placeholder="Password" autocomplete="current-password">
             <button onclick="handleAuth()" id="main-auth-btn" style="width:100%">Sign In</button>
-            <br><button onclick="handleForgotPassword()" style="background:#666; width:100%; margin-top:10px;">Forgotten Password?</button>
-            <br><br><span id="auth-hint" style="font-size:12px; color:var(--muted-text);">Sign in to access your tickets.</span>
+            <br>
+            <button onclick="handleForgotPassword()" class="btn-secondary" style="width:100%; margin-top:10px;">Forgotten Password?</button>
+            <br><br>
+            <span id="auth-hint" style="font-size:12px; color:var(--muted-text);">Sign in to access your tickets.</span>
         </div>
     </div>
 
@@ -273,39 +299,42 @@
             </div>
             <h1 class="header-title">
                 <img src="logo.png" alt="Logo" class="title-logo" onerror="this.style.display='none'">
-                <span>SAUDI AIRLINE</span>
+                <span>SAUDI AIRLINE CLOUD TMS</span>
             </h1>
             <div class="header-controls">
                 <div class="toggle-row">
                     <button id="theme-toggle" class="mini-btn" onclick="toggleTheme()">Night Mode</button>
                     <button id="layout-toggle" class="mini-btn alt" onclick="toggleLayout()">Mobile View</button>
-                    <button id="admin-dash-btn" class="mini-btn" style="display:none; background:#c41e3a;" onclick="toggleAdminDashboard()">Management</button>
+                    <button id="admin-dash-btn" class="mini-btn" style="display:none; background:#c41e3a;" onclick="showAdminDashboard()">Management</button>
                 </div>
                 <div class="user-info"><span id="display-name"></span> | <span style="cursor:pointer; font-weight:bold;" onclick="logout()">Logout</span></div>
             </div>
         </header>
 
-        <div id="admin-dashboard" style="display:none; padding: 20px;">
-            <h2 style="color: var(--islamic-green); text-align: center; margin-bottom: 30px;">User Management Dashboard</h2>
-            <div class="input-grid" style="max-width: 600px; margin: 0 auto;">
-                <div>
-                    <label>Full Name</label>
-                    <input type="text" id="newUserName" placeholder="Enter full name">
-                    <label>Email Address</label>
-                    <input type="text" id="newUserEmail" placeholder="Enter email">
-                    <label>Password</label>
-                    <input type="password" id="newUserPassword" placeholder="Enter password">
-                    <label>Role</label>
-                    <select id="newUserRole">
-                        <option value="user">User</option>
-                        <option value="supervisor">Supervisor</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                    <button onclick="createNewUser()" style="width:100%; margin-top:15px;">Create User</button>
+        <div id="admin-dashboard" class="container" style="display:none;">
+            <div class="card">
+                <h2 style="color: var(--islamic-green); margin-top:0;">User Management</h2>
+                <div class="input-grid" style="max-width: 680px; margin: 0 auto;">
+                    <div>
+                        <label>Full Name</label>
+                        <input type="text" id="newUserName" placeholder="Enter full name">
+                        <label>Email Address</label>
+                        <input type="email" id="newUserEmail" placeholder="Enter email">
+                        <label>Password</label>
+                        <input type="password" id="newUserPassword" placeholder="Enter password">
+                        <label>Role</label>
+                        <select id="newUserRole">
+                            <option value="user">User</option>
+                            <option value="supervisor">Supervisor</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                        <button onclick="createNewUser()" style="width:100%; margin-top:15px;">Create User</button>
+                    </div>
                 </div>
             </div>
-            <div style="margin-top: 40px;">
-                <h3 style="color: var(--islamic-green); text-align: center;">Existing Users</h3>
+
+            <div class="card">
+                <h3 style="color: var(--islamic-green); margin-top:0;">Existing Users</h3>
                 <div class="table-wrap">
                     <table>
                         <thead>
@@ -313,95 +342,98 @@
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Role</th>
-                                <th>Action</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody"></tbody>
                     </table>
                 </div>
             </div>
-            <div style="text-align: center; margin-top: 20px;">
-                <button onclick="toggleAdminDashboard()" style="background:#999;">Back to Tickets</button>
+
+            <div style="text-align:center; margin-bottom:20px;">
+                <button class="btn-secondary" onclick="hideAdminDashboard()" style="background:#999;">Back to Tickets</button>
             </div>
         </div>
 
         <div id="tickets-container" class="container">
-            <div class="input-grid">
-                <div>
-                    <label>Ticket Number</label>
-                    <input type="text" id="ticketNum" placeholder="065**********" maxlength="13">
-                    <label>Ticket Type</label>
-                    <select id="ticketType" onchange="toggleDynamicFields()">
-                        <option value="Fresh Issue">Fresh Issue</option>
-                        <option value="Re-issue">Re-issue</option>
-                        <option value="Re-booked">Re-booked</option>
-                        <option value="Upgrade">Upgrade</option>
-                        <option value="Downgrade">Downgrade</option>
-                    </select>
-                    <label>Ticket Status</label>
-                    <select id="ticketStatus" onchange="toggleDynamicFields()">
-                        <option value="Flown">Flown</option>
-                        <option value="To be Refunded">To be Refunded</option>
-                        <option value="Refunded">Refunded</option>
-                        <option value="N/A">N/A</option>
-                    </select>
-                </div>
-                <div>
-                    <div id="dynamic-area" class="dynamic-section">
-                        <div id="issue-info">
-                            <label id="dateLabel">Date of Issue</label>
-                            <input type="date" id="issueDate">
-                            <label>Name of Issuer</label>
-                            <input type="text" id="issuerName">
-                        </div>
-                        <div id="reason-box" style="display:none;">
-                            <label id="reasonLabel">Reason</label>
-                            <input type="text" id="extraReason" placeholder="Enter reason">
-                        </div>
-                        <div id="status-comment-box" style="display:none;">
-                            <label>Ticket Comment</label>
-                            <input type="text" id="statusComment" placeholder="Additional details">
-                        </div>
-                        <div id="flown-box">
-                            <label>Date of Flight</label>
-                            <input type="date" id="flightDate">
-                        </div>
-                        <div id="refund-box" style="display:none;">
-                            <div id="refunded-only-box" style="display:none;">
-                                <label>Refund Recipient</label>
-                                <input type="text" id="refundRecipient" placeholder="Customer / Recipient name">
-                                <label>Date of Refund</label>
-                                <input type="date" id="refundDate">
-                                <label>Mode of Refund</label>
-                                <select id="refundMode">
-                                    <option value="">Select mode...</option>
-                                    <option value="Cash">Cash</option>
-                                    <option value="Transfer">Transfer</option>
-                                    <option value="Cheque">Cheque</option>
-                                </select>
+            <div class="card">
+                <h2 style="color: var(--islamic-green); margin-top:0;">Ticket Management</h2>
+                <div class="input-grid">
+                    <div>
+                        <label>Ticket Number</label>
+                        <input type="text" id="ticketNum" placeholder="065XXXXXXXXX" maxlength="13">
+                        <label>Ticket Type</label>
+                        <select id="ticketType" onchange="toggleDynamicFields()">
+                            <option value="Fresh Issue">Fresh Issue</option>
+                            <option value="Re-issue">Re-issue</option>
+                            <option value="Re-booked">Re-booked</option>
+                            <option value="Upgrade">Upgrade</option>
+                            <option value="Downgrade">Downgrade</option>
+                        </select>
+                        <label>Ticket Status</label>
+                        <select id="ticketStatus" onchange="toggleDynamicFields()">
+                            <option value="Flown">Flown</option>
+                            <option value="To be Refunded">To be Refunded</option>
+                            <option value="Refunded">Refunded</option>
+                            <option value="N/A">N/A</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div id="dynamic-area" class="dynamic-section">
+                            <div id="issue-info">
+                                <label>Date of Issue</label>
+                                <input type="date" id="issueDate">
+                                <label>Name of Issuer</label>
+                                <input type="text" id="issuerName">
                             </div>
-                            <label>Refunded By</label>
-                            <input type="text" id="refundBy" placeholder="Staff name">
-                            <label>Reason for Refund</label>
-                            <input type="text" id="refundReason">
+                            <div id="reason-box" style="display:none;">
+                                <label id="reasonLabel">Reason</label>
+                                <input type="text" id="extraReason" placeholder="Enter reason">
+                            </div>
+                            <div id="status-comment-box" style="display:none;">
+                                <label>Ticket Comment</label>
+                                <input type="text" id="statusComment" placeholder="Additional details">
+                            </div>
+                            <div id="flown-box">
+                                <label>Date of Flight</label>
+                                <input type="date" id="flightDate">
+                            </div>
+                            <div id="refund-box" style="display:none;">
+                                <div id="refunded-only-box" style="display:none;">
+                                    <label>Refund Recipient</label>
+                                    <input type="text" id="refundRecipient" placeholder="Customer / Recipient name">
+                                    <label>Date of Refund</label>
+                                    <input type="date" id="refundDate">
+                                    <label>Mode of Refund</label>
+                                    <select id="refundMode">
+                                        <option value="">Select mode...</option>
+                                        <option value="Cash">Cash</option>
+                                        <option value="Transfer">Transfer</option>
+                                        <option value="Cheque">Cheque</option>
+                                    </select>
+                                </div>
+                                <label>Refunded By</label>
+                                <input type="text" id="refundBy" placeholder="Staff name">
+                                <label>Reason for Refund</label>
+                                <input type="text" id="refundReason">
+                            </div>
                         </div>
                     </div>
                 </div>
+                <div class="btn-row">
+                    <button onclick="saveTicket()">Save Ticket</button>
+                    <button id="admin-upd" class="btn-update" onclick="updateTicket()">Update</button>
+                    <button id="admin-del" class="btn-delete" onclick="deleteTicket()">Delete</button>
+                    <button style="background:#2e7d32" onclick="exportSelectedToCSV()">Export CSV</button>
+                </div>
             </div>
-            <div class="btn-row">
-                <button onclick="saveTicket()">Save Ticket</button>
-                <button id="admin-upd" class="btn-update" onclick="updateTicket()">Update</button>
-                <button id="admin-del" class="btn-delete" onclick="deleteTicket()">Delete</button>
-                <button style="background:#2e7d32" onclick="exportSelectedToCSV()">Export CSV</button>
-            </div>
-            
+
             <div class="filter-bar">
                 <div class="filter-item" style="grid-column: span 2;">
                     <label>Search</label>
                     <input type="text" id="search" placeholder="Search ticket numbers..." oninput="applyFiltersAndSort()">
                     <div id="result-meta" class="muted" style="margin-top:6px;"></div>
                 </div>
-
                 <div class="filter-item">
                     <label>Status</label>
                     <select id="filterStatus" onchange="applyFiltersAndSort()">
@@ -412,7 +444,6 @@
                         <option value="N/A">N/A</option>
                     </select>
                 </div>
-
                 <div class="filter-item">
                     <label>Type</label>
                     <select id="filterType" onchange="applyFiltersAndSort()">
@@ -424,24 +455,20 @@
                         <option value="Downgrade">Downgrade</option>
                     </select>
                 </div>
-
                 <div class="filter-item">
                     <label>Staff</label>
                     <select id="filterStaff" onchange="applyFiltersAndSort()">
                         <option value="">All</option>
                     </select>
                 </div>
-
                 <div class="filter-item">
                     <label>Date From</label>
                     <input type="date" id="filterDateFrom" onchange="applyFiltersAndSort()">
                 </div>
-
                 <div class="filter-item">
                     <label>Date To</label>
                     <input type="date" id="filterDateTo" onchange="applyFiltersAndSort()">
                 </div>
-
                 <div class="filter-item">
                     <label>Sort by</label>
                     <select id="sortBy" onchange="applyFiltersAndSort()">
@@ -452,7 +479,6 @@
                         <option value="processed_by">Staff</option>
                     </select>
                 </div>
-
                 <div class="filter-item">
                     <label>Order</label>
                     <select id="sortDir" onchange="applyFiltersAndSort()">
@@ -460,12 +486,11 @@
                         <option value="asc">Ascending</option>
                     </select>
                 </div>
-
                 <div class="filter-actions" style="grid-column: span 2;">
                     <button class="mini-btn" onclick="resetFilters()">Reset filters</button>
                 </div>
             </div>
-            
+
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -489,18 +514,19 @@
         const SAUDIA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsenRidWlydmx4bGJtYnVzY3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjQ5OTMsImV4cCI6MjA5MjAwMDk5M30.ZJY5wVNo3SbPEgS5u5bsSZg1g8D96ak9AT0VTCm6gi8';
         const saudiaClient = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY);
 
-        let activeUser, activeProfile, ticketsList = [], selectedTicketId = null;
-        let visibleTickets = [];
-        let authMode = 'signin'; // 'signin' | 'signup'
+        let activeUser = null;
+        let activeProfile = null;
+        let ticketsList = [];
+        let selectedTicketId = null;
+        let authMode = 'signin';
 
         function hasRole(role) {
-            const r = (activeProfile?.role || 'user').toLowerCase();
-            return r === role;
+            return String(activeProfile?.role || 'user').toLowerCase() === String(role || '').toLowerCase();
         }
 
         function canEditTickets() {
-            const r = (activeProfile?.role || 'user').toLowerCase();
-            return r === 'admin' || r === 'supervisor';
+            const role = String(activeProfile?.role || 'user').toLowerCase();
+            return role === 'admin' || role === 'supervisor';
         }
 
         function canManageUsers() {
@@ -511,7 +537,7 @@
             const { data, error } = await saudiaClient.auth.getSession();
             if (!error && data?.session?.user) {
                 activeUser = data.session.user;
-                loadApp();
+                await loadApp();
                 return;
             }
             document.getElementById('login-screen').style.display = 'flex';
@@ -527,21 +553,18 @@
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('email').value = '';
             document.getElementById('password').value = '';
-            if (document.getElementById('signupFullName')) document.getElementById('signupFullName').value = '';
+            document.getElementById('signupFullName').value = '';
             setAuthMode('signin');
         }
 
         function applyUiPrefs() {
             const theme = localStorage.getItem('tms_theme') || 'light';
             document.documentElement.setAttribute('data-theme', theme);
-
             const layout = localStorage.getItem('tms_layout') || 'auto';
             if (layout === 'mobile') document.documentElement.setAttribute('data-layout', 'mobile');
             else document.documentElement.removeAttribute('data-layout');
-
             const themeBtn = document.getElementById('theme-toggle');
             if (themeBtn) themeBtn.innerText = theme === 'dark' ? 'Light Mode' : 'Night Mode';
-
             const layoutBtn = document.getElementById('layout-toggle');
             if (layoutBtn) layoutBtn.innerText = layout === 'mobile' ? 'Desktop View' : 'Mobile View';
         }
@@ -549,7 +572,6 @@
         function toggleTheme() {
             const current = document.documentElement.getAttribute('data-theme');
             const target = current === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', target);
             localStorage.setItem('tms_theme', target);
             applyUiPrefs();
         }
@@ -561,322 +583,251 @@
             applyUiPrefs();
         }
 
-        function handleForgotPassword() {
-            const email = document.getElementById('email').value.trim();
-            if (!email) return alert("Please enter your email address.");
-            alert(`Password reset instructions have been sent to ${email}.\n\nPlease check your email inbox.`);
-            // In production, this would send a real password reset email
-        }
-
         function setAuthMode(mode) {
             authMode = mode === 'signup' ? 'signup' : 'signin';
-
             const isSignup = authMode === 'signup';
-            const signupFields = document.getElementById('signup-fields');
-            if (signupFields) signupFields.style.display = isSignup ? 'block' : 'none';
-
-            const title = document.getElementById('auth-title');
-            if (title) title.textContent = isSignup ? 'CREATE ACCOUNT' : 'CLOUD TMS LOGIN';
-
-            const mainBtn = document.getElementById('main-auth-btn');
-            if (mainBtn) mainBtn.textContent = isSignup ? 'Create Account' : 'Sign In';
-
-            const hint = document.getElementById('auth-hint');
-            if (hint) hint.textContent = isSignup
+            document.getElementById('signup-fields').style.display = isSignup ? 'block' : 'none';
+            document.getElementById('auth-title').textContent = isSignup ? 'CREATE ACCOUNT' : 'CLOUD TMS LOGIN';
+            document.getElementById('main-auth-btn').textContent = isSignup ? 'Create Account' : 'Sign In';
+            document.getElementById('auth-hint').textContent = isSignup
                 ? 'New accounts are created as User by default. Admin can later upgrade roles.'
                 : 'Sign in to access your tickets.';
-
-            const signInBtn = document.getElementById('auth-signin-btn');
-            const signUpBtn = document.getElementById('auth-signup-btn');
-            if (signInBtn && signUpBtn) {
-                if (isSignup) {
-                    signInBtn.classList.remove('alt');
-                    signUpBtn.classList.add('alt');
-                } else {
-                    signInBtn.classList.add('alt');
-                    signUpBtn.classList.remove('alt');
-                }
-            }
+            document.getElementById('auth-signin-btn').classList.toggle('alt', !isSignup);
+            document.getElementById('auth-signup-btn').classList.toggle('alt', isSignup);
         }
 
-        function toggleAdminDashboard() {
-            if (!canManageUsers()) return alert("Admin only.");
-            const adminDash = document.getElementById('admin-dashboard');
-            const ticketsCont = document.getElementById('tickets-container');
-            
-            if (adminDash.style.display === 'none') {
-                adminDash.style.display = 'block';
-                ticketsCont.style.display = 'none';
-                loadUsers();
-            } else {
-                adminDash.style.display = 'none';
-                ticketsCont.style.display = 'block';
-            }
+        async function handleForgotPassword() {
+            const email = document.getElementById('email').value.trim();
+            if (!email) return alert('Please enter your email address.');
+            const { error } = await saudiaClient.auth.resetPasswordForEmail(email);
+            if (error) return alert(error.message || 'Unable to send password reset.');
+            alert('Password reset email sent. Please check your inbox.');
+        }
+
+        function showAdminDashboard() {
+            if (!canManageUsers()) return alert('Admin only.');
+            document.getElementById('tickets-container').style.display = 'none';
+            document.getElementById('admin-dashboard').style.display = 'block';
+            loadUsers();
+        }
+
+        function hideAdminDashboard() {
+            document.getElementById('admin-dashboard').style.display = 'none';
+            document.getElementById('tickets-container').style.display = 'block';
         }
 
         async function loadUsers() {
-            const { data, error } = await saudiaClient.from('profiles').select('id, full_name, email, role');
+            const { data, error } = await saudiaClient.from('profiles').select('id, full_name, email, role').order('full_name', { ascending: true });
             if (error) {
                 console.error('Load users error:', error);
-                alert("Unable to load users. Check RLS policies for `profiles`.");
-                return;
+                return alert('Unable to load users. Check Supabase permissions.');
             }
             const body = document.getElementById('usersTableBody');
             body.innerHTML = '';
-            
             (data || []).forEach(user => {
-                const row = body.insertRow();
-                const role = String(user.role || 'user').toLowerCase();
-                const roleSelId = `role_${user.id}`;
-
-                row.innerHTML = `
-                    <td>${escapeHtml(user.full_name || '')}</td>
-                    <td>${escapeHtml(user.email || '-')}</td>
-                    <td>
-                        <select id="${escapeHtml(roleSelId)}" style="padding:6px; border-radius:10px;">
-                            <option value="user" ${role === 'user' ? 'selected' : ''}>User</option>
-                            <option value="supervisor" ${role === 'supervisor' ? 'selected' : ''}>Supervisor</option>
-                            <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
-                        </select>
-                    </td>
-                    <td style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <button onclick="updateUserRole('${user.id}', document.getElementById('${escapeHtml(roleSelId)}').value)" style="background:#8E713E; padding:5px 10px; font-size:11px;">Save</button>
-                        <button onclick="deleteUser('${user.id}')" style="background:#b22222; padding:5px 10px; font-size:11px;">Delete</button>
-                    </td>
-                `;
+                const row = document.createElement('tr');
+                const nameCell = document.createElement('td');
+                nameCell.textContent = user.full_name || '';
+                const emailCell = document.createElement('td');
+                emailCell.textContent = user.email || '-';
+                const roleCell = document.createElement('td');
+                const select = document.createElement('select');
+                ['user', 'supervisor', 'admin'].forEach(roleOption => {
+                    const option = document.createElement('option');
+                    option.value = roleOption;
+                    option.textContent = roleOption.charAt(0).toUpperCase() + roleOption.slice(1);
+                    if (roleOption === String(user.role || 'user').toLowerCase()) option.selected = true;
+                    select.appendChild(option);
+                });
+                roleCell.appendChild(select);
+                const actionsCell = document.createElement('td');
+                actionsCell.style.display = 'flex';
+                actionsCell.style.gap = '8px';
+                const saveBtn = document.createElement('button');
+                saveBtn.textContent = 'Save';
+                saveBtn.style.background = '#8E713E';
+                saveBtn.style.padding = '5px 10px';
+                saveBtn.style.fontSize = '11px';
+                saveBtn.onclick = event => {
+                    event.stopPropagation();
+                    updateUserRole(user.id, select.value);
+                };
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.style.background = '#b22222';
+                deleteBtn.style.padding = '5px 10px';
+                deleteBtn.style.fontSize = '11px';
+                deleteBtn.onclick = event => {
+                    event.stopPropagation();
+                    deleteUser(user.id, user.email);
+                };
+                actionsCell.appendChild(saveBtn);
+                actionsCell.appendChild(deleteBtn);
+                row.appendChild(nameCell);
+                row.appendChild(emailCell);
+                row.appendChild(roleCell);
+                row.appendChild(actionsCell);
+                body.appendChild(row);
             });
         }
 
         async function updateUserRole(userId, newRole) {
-            if (!canManageUsers()) return alert("Admin only.");
-            const role = String(newRole || '').toLowerCase();
-            if (!['user', 'supervisor', 'admin'].includes(role)) return alert("Invalid role.");
-
-            const { error } = await saudiaClient.from('profiles').update({ role }).eq('id', userId);
+            if (!canManageUsers()) return alert('Admin only.');
+            if (!['user', 'supervisor', 'admin'].includes(String(newRole).toLowerCase())) return alert('Invalid role.');
+            const { error } = await saudiaClient.from('profiles').update({ role: newRole.toLowerCase() }).eq('id', userId);
             if (error) {
                 console.error('Update role error:', error);
-                return alert("Error updating role: " + error.message);
+                return alert('Error updating role: ' + (error.message || 'Unknown error'));
             }
-            alert("Role updated successfully.");
+            alert('Role updated successfully.');
             loadUsers();
         }
 
         function formatEdgeFunctionError(error) {
-            // Supabase Functions errors often include status/body in `context`.
             const status = error?.context?.status;
             const body = error?.context?.body;
             const parts = [];
             if (typeof status === 'number') parts.push(`HTTP ${status}`);
             if (error?.message) parts.push(error.message);
             if (body) parts.push(typeof body === 'string' ? body : JSON.stringify(body));
-            // Helpful hint for the common "Failed to send a request..." case
             if ((error?.message || '').includes('Failed to send a request to the Edge Function')) {
-                parts.push('Likely causes: function not deployed/name mismatch, CORS/OPTIONS not handled in the function, blocked network/DNS/proxy.');
+                parts.push('Likely cause: function not deployed, wrong name, or network issue.');
             }
-            return parts.filter(Boolean).join(" - ") || "Unknown error";
+            return parts.filter(Boolean).join(' - ') || 'Unknown error';
         }
 
         async function invokeEdgeFunctionWithFallback(functionNames, options) {
-            let last = null;
+            let lastResult = null;
             for (const fn of functionNames) {
                 try {
                     const res = await saudiaClient.functions.invoke(fn, options);
                     if (!res?.error) return { ...res, functionName: fn };
-                    last = { ...res, functionName: fn };
-                } catch (e) {
-                    last = { data: null, error: e, functionName: fn };
+                    lastResult = { ...res, functionName: fn };
+                } catch (error) {
+                    lastResult = { data: null, error, functionName: fn };
                 }
             }
-            return last || { data: null, error: new Error('Unknown Edge Function error'), functionName: functionNames?.[0] };
+            return lastResult || { data: null, error: new Error('Edge Function invocation failed'), functionName: functionNames?.[0] };
         }
 
         async function createNewUser() {
-    const name = document.getElementById('newUserName').value.trim();
-    const email = document.getElementById('newUserEmail').value.trim();
-    const password = document.getElementById('newUserPassword').value.trim();
-    const role = document.getElementById('newUserRole').value;
-    
-    if (!name || !email || !password) return alert("All fields are required.");
-    
-    try {
-        const payload = {
-            // snake_case (matches SQL variable names)
-            email,
-            password,
-            full_name: name,
-            user_role: role
-        };
-
-        const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['create_user_by_admin', 'create-user'], {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        if (error) {
-            console.error('Create user error:', { functionName, error, data });
-            const msg = formatEdgeFunctionError(error);
-            console.error('Formatted error:', msg);
-            return alert("Error creating user: " + msg);
+            const name = document.getElementById('newUserName').value.trim();
+            const email = document.getElementById('newUserEmail').value.trim();
+            const password = document.getElementById('newUserPassword').value.trim();
+            const role = document.getElementById('newUserRole').value;
+            if (!name || !email || !password) return alert('Name, email, and password are required.');
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert('Please enter a valid email address.');
+            const payload = { email, password, full_name: name, user_role: role };
+            const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['create_user_by_admin', 'create-user'], {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (error) {
+                console.error('Create user error:', { functionName, error, data });
+                return alert('Error creating user: ' + formatEdgeFunctionError(error));
+            }
+            alert('User created successfully.');
+            document.getElementById('newUserName').value = '';
+            document.getElementById('newUserEmail').value = '';
+            document.getElementById('newUserPassword').value = '';
+            document.getElementById('newUserRole').value = 'user';
+            loadUsers();
         }
-        
-        alert('User created successfully!');
-        
-        document.getElementById('newUserName').value = '';
-        document.getElementById('newUserEmail').value = '';
-        document.getElementById('newUserPassword').value = '';
-        loadUsers();
-        
-    } catch (err) {
-        console.error('Create user exception:', err);
-        alert("System Error: " + err.message);
-    }
-}
 
-        async function deleteUser(userId) {
-    if (!confirm("Are you sure you want to delete this user?")) return;
-    
-    try {
-        const payload = { user_id: userId };
-        
-        const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['delete_user_by_admin', 'delete-user'], {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        if (error) {
-            console.error('Delete user error:', { functionName, error, data });
-            const msg = formatEdgeFunctionError(error);
-            console.error('Formatted error:', msg);
-            return alert("Error deleting user: " + msg);
+        async function deleteUser(userId, userEmail) {
+            if (!canManageUsers()) return alert('Admin only.');
+            if (!userId) return;
+            if (!confirm(`Delete user ${userEmail || ''}? This cannot be undone.`)) return;
+            const payload = { user_id: userId };
+            const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['delete_user_by_admin', 'delete-user'], {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (error) {
+                console.error('Delete user error:', { functionName, error, data });
+                return alert('Error deleting user: ' + formatEdgeFunctionError(error));
+            }
+            alert('User deleted successfully.');
+            loadUsers();
         }
-        
-        alert('User deleted successfully!');
-        loadUsers();
-        
-    } catch (err) {
-        console.error('Delete user exception:', err);
-        alert("System Error: " + err.message);
-    }
-}
 
         async function ensureProfileForUser(user, fullNameMaybe) {
             if (!user?.id) return;
-
-            const base = {
+            const { data: existing } = await saudiaClient.from('profiles').select('role').eq('id', user.id).single();
+            const role = existing?.role || 'user';
+            const profile = {
                 id: user.id,
                 email: user.email || null,
                 full_name: (fullNameMaybe || user.user_metadata?.full_name || user.user_metadata?.fullName || '').trim() || null,
-                role: 'user'
+                role
             };
-
-            // Upsert profile (requires the SQL policies/trigger provided in the next step)
-            const { error } = await saudiaClient
-                .from('profiles')
-                .upsert([base], { onConflict: 'id' });
-
-            if (error) {
-                console.warn('Profile upsert failed (check RLS/trigger):', error);
-            }
+            const { error } = await saudiaClient.from('profiles').upsert([profile], { onConflict: 'id' });
+            if (error) console.warn('Profile upsert failed:', error);
         }
 
         async function handleAuth() {
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
-
-            if (!email || !email.includes('@')) return alert("Please enter a valid email address.");
-            if (!password) return alert("Please enter your password.");
-
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert('Please enter a valid email address.');
+            if (!password) return alert('Please enter your password.');
             if (authMode === 'signup') {
-                const fullName = (document.getElementById('signupFullName')?.value || '').trim();
-                if (!fullName) return alert("Please enter your full name.");
-
-                const { data, error } = await saudiaClient.auth.signUp({
-                    email,
-                    password,
-                    options: { data: { full_name: fullName } }
-                });
-
+                const fullName = document.getElementById('signupFullName').value.trim();
+                if (!fullName) return alert('Please enter your full name.');
+                const { data, error } = await saudiaClient.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
                 if (error) return alert(error.message);
-
-                // If email confirmations are ON, user may need to confirm before session is available.
-                const createdUser = data?.user;
-                await ensureProfileForUser(createdUser, fullName);
-
-                alert("Account created. If email confirmation is enabled, please check your email to confirm before signing in.");
+                await ensureProfileForUser(data?.user, fullName);
+                alert('Account created successfully. Please sign in.');
                 setAuthMode('signin');
                 document.getElementById('password').value = '';
                 return;
             }
-
             const { data, error } = await saudiaClient.auth.signInWithPassword({ email, password });
             if (error) return alert(error.message);
             activeUser = data.user;
-            loadApp();
+            await loadApp();
         }
 
         async function loadApp() {
-    // 1. Ensure a profile exists for the current user
-    await ensureProfileForUser(activeUser);
-
-    // 2. Fetch the LATEST data from the profiles table
-    const { data, error } = await saudiaClient
-        .from('profiles')
-        .select('*')
-        .eq('id', activeUser.id)
-        .single();
-
-    if (error) {
-        console.error("Error fetching profile:", error);
-        activeProfile = { id: activeUser.id, full_name: activeUser.email, role: 'user' };
-    } else {
-        activeProfile = data;
-    }
-
-    // 3. Update the UI
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('main-app').style.display = 'block';
-    
-    const roleLabel = (activeProfile.role || 'user').toUpperCase();
-    document.getElementById('display-name').innerText = `${activeProfile.full_name || activeUser.email} (${roleLabel})`;
-
-    // 4. SHOW ADMIN BUTTONS if role is admin
-    const isAdmin = activeProfile.role === 'admin';
-    const adminDashBtn = document.getElementById('admin-dash-btn');
-    if (adminDashBtn) {
-        adminDashBtn.style.display = isAdmin ? 'inline-block' : 'none';
-    }
-
-    // Show/Hide update/delete buttons for tickets
-    const canEdit = isAdmin || activeProfile.role === 'supervisor';
-    document.getElementById('admin-upd').style.display = canEdit ? 'inline-block' : 'none';
-    document.getElementById('admin-del').style.display = canEdit ? 'inline-block' : 'none';
-
-    getTickets();
-}
+            if (!activeUser) {
+                const { data, error } = await saudiaClient.auth.getSession();
+                if (error || !data?.session?.user) return initAuth();
+                activeUser = data.session.user;
+            }
+            await ensureProfileForUser(activeUser);
+            const { data, error } = await saudiaClient.from('profiles').select('*').eq('id', activeUser.id).single();
+            activeProfile = data || { id: activeUser.id, full_name: activeUser.email, role: 'user' };
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            document.getElementById('display-name').innerText = `${activeProfile.full_name || activeUser.email} (${String(activeProfile.role || 'user').toUpperCase()})`;
+            const updBtn = document.getElementById('admin-upd');
+            const delBtn = document.getElementById('admin-del');
+            if (updBtn) updBtn.style.display = canEditTickets() ? 'inline-block' : 'none';
+            if (delBtn) delBtn.style.display = canEditTickets() ? 'inline-block' : 'none';
+            const adminDashBtn = document.getElementById('admin-dash-btn');
+            if (adminDashBtn) adminDashBtn.style.display = canManageUsers() ? 'inline-block' : 'none';
+            document.getElementById('tickets-container').style.display = 'block';
+            document.getElementById('admin-dashboard').style.display = 'none';
+            await getTickets();
+        }
 
         function toggleDynamicFields() {
             const type = document.getElementById('ticketType').value;
             const status = document.getElementById('ticketStatus').value;
-            
-            // Show reason box for types that need it
-            const showReason = (type === "Upgrade" || type === "Downgrade" || type === "Re-issue" || type === "Re-booked");
-            document.getElementById('reason-box').style.display = showReason ? "block" : "none";
-            
-            // Update label based on type
+            const showReason = ['Upgrade', 'Downgrade', 'Re-issue', 'Re-booked'].includes(type);
+            document.getElementById('reason-box').style.display = showReason ? 'block' : 'none';
             const reasonLabel = document.getElementById('reasonLabel');
-            if (type === "Upgrade") reasonLabel.innerText = "Reason for upgrade";
-            else if (type === "Downgrade") reasonLabel.innerText = "Reason for downgrade";
-            else if (type === "Re-issue" || type === "Re-booked") reasonLabel.innerText = "Type Reason";
-            
-            document.getElementById('flown-box').style.display = (status === "Flown") ? "block" : "none";
-            document.getElementById('refund-box').style.display = (status === "Refunded" || status === "To be Refunded") ? "block" : "none";
-            document.getElementById('refunded-only-box').style.display = (status === "Refunded") ? "block" : "none";
+            if (type === 'Upgrade') reasonLabel.innerText = 'Reason for upgrade';
+            else if (type === 'Downgrade') reasonLabel.innerText = 'Reason for downgrade';
+            else if (['Re-issue', 'Re-booked'].includes(type)) reasonLabel.innerText = 'Ticket reason';
+            document.getElementById('flown-box').style.display = status === 'Flown' ? 'block' : 'none';
+            document.getElementById('refund-box').style.display = ['Refunded', 'To be Refunded'].includes(status) ? 'block' : 'none';
+            document.getElementById('refunded-only-box').style.display = status === 'Refunded' ? 'block' : 'none';
         }
 
         async function getTickets() {
-            const { data } = await saudiaClient.from('tickets').select('*').order('created_at', { ascending: false });
+            const { data, error } = await saudiaClient.from('tickets').select('*').order('created_at', { ascending: false });
             ticketsList = data || [];
             populateStaffFilterOptions();
             applyFiltersAndSort();
@@ -885,13 +836,10 @@
         function populateStaffFilterOptions() {
             const staffSel = document.getElementById('filterStaff');
             if (!staffSel) return;
-
-            const current = staffSel.value || "";
-            const unique = Array.from(new Set((ticketsList || []).map(t => (t.processed_by || '').trim()).filter(Boolean)))
-                .sort((a, b) => a.localeCompare(b));
-
+            const current = staffSel.value || '';
+            const unique = Array.from(new Set((ticketsList || []).map(t => (t.processed_by || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
             staffSel.innerHTML = `<option value="">All</option>` + unique.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
-            staffSel.value = unique.includes(current) ? current : "";
+            staffSel.value = unique.includes(current) ? current : '';
         }
 
         function applyFiltersAndSort() {
@@ -903,27 +851,22 @@
             const dateTo = document.getElementById('filterDateTo')?.value || '';
             const sortBy = document.getElementById('sortBy')?.value || 'created_at';
             const sortDir = document.getElementById('sortDir')?.value || 'desc';
-
             const fromTs = dateFrom ? Date.parse(dateFrom + 'T00:00:00') : null;
             const toTs = dateTo ? Date.parse(dateTo + 'T23:59:59') : null;
-
-            visibleTickets = (ticketsList || []).filter(t => {
-                if (q && !(String(t.ticket_num || '').toLowerCase().includes(q))) return false;
+            const filtered = (ticketsList || []).filter(t => {
+                if (q && !String(t.ticket_num || '').toLowerCase().includes(q)) return false;
                 if (fStatus && t.status !== fStatus) return false;
                 if (fType && t.type !== fType) return false;
                 if (fStaff && (t.processed_by || '') !== fStaff) return false;
-
                 const issue = t.issue_date ? Date.parse(t.issue_date + 'T00:00:00') : null;
                 if (fromTs && (!issue || issue < fromTs)) return false;
                 if (toTs && (!issue || issue > toTs)) return false;
                 return true;
             });
-
             const dir = sortDir === 'asc' ? 1 : -1;
-            visibleTickets.sort((a, b) => dir * compareTickets(a, b, sortBy));
-
-            renderTable(visibleTickets);
-            updateResultMeta();
+            filtered.sort((a, b) => dir * compareTickets(a, b, sortBy));
+            renderTable(filtered);
+            updateResultMeta(filtered.length, ticketsList.length);
         }
 
         function compareTickets(a, b, sortBy) {
@@ -943,12 +886,10 @@
             return 0;
         }
 
-        function updateResultMeta() {
+        function updateResultMeta(shown, total) {
             const el = document.getElementById('result-meta');
             if (!el) return;
-            const total = (ticketsList || []).length;
-            const shown = (visibleTickets || []).length;
-            el.textContent = `Showing ${shown} of ${total}`;
+            el.textContent = `Showing ${shown} of ${total} tickets`;
         }
 
         function resetFilters() {
@@ -956,14 +897,14 @@
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
-                if (el.tagName === 'SELECT') el.value = (id === 'sortBy' ? 'created_at' : (id === 'sortDir' ? 'desc' : ''));
+                if (el.tagName === 'SELECT') el.value = id === 'sortBy' ? 'created_at' : id === 'sortDir' ? 'desc' : '';
                 else el.value = '';
             });
             applyFiltersAndSort();
         }
 
-        function escapeHtml(str) {
-            return String(str)
+        function escapeHtml(value) {
+            return String(value || '')
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
@@ -972,210 +913,145 @@
         }
 
         function renderTable(data) {
-            const body = document.getElementById('tableBody'); body.innerHTML = '';
-            data.forEach(t => {
-                const row = body.insertRow();
-                let cls = 'row-na';
-                if(t.status === 'Flown') cls = 'row-flown';
-                if(t.status === 'Refunded' || t.status === 'To be Refunded') cls = 'row-refund';
+            const body = document.getElementById('tableBody');
+            body.innerHTML = '';
+            data.forEach(ticket => {
+                const row = document.createElement('tr');
+                const cls = ticket.status === 'Flown' ? 'row-flown' : ['Refunded', 'To be Refunded'].includes(ticket.status) ? 'row-refund' : 'row-na';
                 row.className = cls;
-                row.innerHTML = `<td><input type="checkbox" class="export-check" data-id="${escapeHtml(t.id)}"></td><td>${escapeHtml(t.ticket_num || '')}</td><td>${escapeHtml(t.type || '')}</td><td>${escapeHtml(t.status || '')}</td><td>${escapeHtml(t.issue_date || '-')}</td><td>${escapeHtml(t.processed_by || '')}</td>`;
-                row.onclick = (e) => { if(e.target.type !== 'checkbox') selectTicket(t, row); };
-                if (selectedTicketId && t.id === selectedTicketId) row.classList.add('is-selected');
+                row.innerHTML = `
+                    <td><input type="checkbox" class="export-check" data-id="${escapeHtml(ticket.id)}"></td>
+                    <td>${escapeHtml(ticket.ticket_num || '')}</td>
+                    <td>${escapeHtml(ticket.type || '')}</td>
+                    <td>${escapeHtml(ticket.status || '')}</td>
+                    <td>${escapeHtml(ticket.issue_date || '-')}</td>
+                    <td>${escapeHtml(ticket.processed_by || '')}</td>
+                `;
+                row.onclick = event => { if (event.target.type !== 'checkbox') selectTicket(ticket, row); };
+                if (selectedTicketId && ticket.id === selectedTicketId) row.classList.add('is-selected');
+                body.appendChild(row);
             });
         }
 
-        // Function to retrieve data back into the form when a row is clicked
-        function selectTicket(t, rowEl) {
-            selectedTicketId = t.id;
-            document.getElementById('ticketNum').value = t.ticket_num;
-            document.getElementById('ticketType').value = t.type;
-            document.getElementById('ticketStatus').value = t.status;
-            document.getElementById('issueDate').value = t.issue_date;
-            document.getElementById('statusComment').value = t.status_comment || "";
-            document.getElementById('issuerName').value = t.issuer_name || "";
-            document.getElementById('flightDate').value = t.flight_date || "";
-            
-            // Logic to pull from the correct column based on type
-            let reason = "";
-            if (t.type === "Upgrade") reason = t.upgrade_reason;
-            else if (t.type === "Downgrade") reason = t.downgrade_reason;
-            else if (t.type === "Re-issue") reason = t.reissue_reason;
-            else if (t.type === "Re-booked") reason = t.rebook_reason;
-            
-            document.getElementById('extraReason').value = reason || "";
-            
-            const refundRecipient = document.getElementById('refundRecipient');
-            if (refundRecipient) refundRecipient.value = t.refund_recipient || "";
-            const refundDate = document.getElementById('refundDate');
-            if (refundDate) refundDate.value = t.refund_date || "";
-            const refundMode = document.getElementById('refundMode');
-            if (refundMode) refundMode.value = t.refund_mode || "";
-            const refundBy = document.getElementById('refundBy');
-            if (refundBy) refundBy.value = t.refund_by || "";
-            const refundReason = document.getElementById('refundReason');
-            if (refundReason) refundReason.value = t.refund_reason || "";
-            
+        function selectTicket(ticket, rowEl) {
+            selectedTicketId = ticket.id;
+            document.getElementById('ticketNum').value = ticket.ticket_num || '';
+            document.getElementById('ticketType').value = ticket.type || 'Fresh Issue';
+            document.getElementById('ticketStatus').value = ticket.status || 'Flown';
+            document.getElementById('issueDate').value = ticket.issue_date || '';
+            document.getElementById('issuerName').value = ticket.issuer_name || '';
+            document.getElementById('flightDate').value = ticket.flight_date || '';
+            document.getElementById('statusComment').value = ticket.status_comment || '';
+            let reason = '';
+            if (ticket.type === 'Upgrade') reason = ticket.upgrade_reason || '';
+            else if (ticket.type === 'Downgrade') reason = ticket.downgrade_reason || '';
+            else if (ticket.type === 'Re-issue') reason = ticket.reissue_reason || '';
+            else if (ticket.type === 'Re-booked') reason = ticket.rebook_reason || '';
+            document.getElementById('extraReason').value = reason;
+            document.getElementById('refundRecipient').value = ticket.refund_recipient || '';
+            document.getElementById('refundDate').value = ticket.refund_date || '';
+            document.getElementById('refundMode').value = ticket.refund_mode || '';
+            document.getElementById('refundBy').value = ticket.refund_by || '';
+            document.getElementById('refundReason').value = ticket.refund_reason || '';
             toggleDynamicFields();
-
             document.querySelectorAll('#tableBody tr.is-selected').forEach(el => el.classList.remove('is-selected'));
             if (rowEl) rowEl.classList.add('is-selected');
         }
 
         async function saveTicket() {
             const rawTicketNum = (document.getElementById('ticketNum').value || '').trim();
-            if (!rawTicketNum) return alert("Ticket Number is required.");
-            if (!/^\d{13}$/.test(rawTicketNum)) return alert("Ticket Number must be exactly 13 digits.");
-
+            if (!rawTicketNum) return alert('Ticket Number is required.');
+            if (!/^[0-9]{13}$/.test(rawTicketNum)) return alert('Ticket Number must be exactly 13 digits.');
             const type = document.getElementById('ticketType').value;
-            const reasonValue = document.getElementById('extraReason').value;
-            const issuerName = (document.getElementById('issuerName')?.value || '').trim();
-            const flightDate = document.getElementById('flightDate')?.value || null;
-
+            const status = document.getElementById('ticketStatus').value;
             const payload = {
                 ticket_num: rawTicketNum,
-                type: type,
-                status: document.getElementById('ticketStatus').value,
+                type,
+                status,
                 issue_date: document.getElementById('issueDate').value || null,
-                status_comment: document.getElementById('statusComment').value,
-                processed_by: activeProfile.full_name,
-                issuer_name: issuerName || null,
-                flight_date: flightDate,
-                
-                // Logic to route the reason to the specific column
-                reissue_reason: (type === "Re-issue") ? reasonValue : null,
-                rebook_reason: (type === "Re-booked") ? reasonValue : null,
-                upgrade_reason: (type === "Upgrade") ? reasonValue : null,
-                downgrade_reason: (type === "Downgrade") ? reasonValue : null
+                issuer_name: (document.getElementById('issuerName')?.value || '').trim() || null,
+                flight_date: document.getElementById('flightDate')?.value || null,
+                status_comment: document.getElementById('statusComment')?.value || null,
+                processed_by: activeProfile.full_name || activeUser.email || null,
+                reissue_reason: type === 'Re-issue' ? document.getElementById('extraReason')?.value || null : null,
+                rebook_reason: type === 'Re-booked' ? document.getElementById('extraReason')?.value || null : null,
+                upgrade_reason: type === 'Upgrade' ? document.getElementById('extraReason')?.value || null : null,
+                downgrade_reason: type === 'Downgrade' ? document.getElementById('extraReason')?.value || null : null,
+                refund_by: ['Refunded', 'To be Refunded'].includes(status) ? document.getElementById('refundBy')?.value || null : null,
+                refund_reason: ['Refunded', 'To be Refunded'].includes(status) ? document.getElementById('refundReason')?.value || null : null,
+                refund_recipient: status === 'Refunded' ? document.getElementById('refundRecipient')?.value || null : null,
+                refund_date: status === 'Refunded' ? document.getElementById('refundDate')?.value || null : null,
+                refund_mode: status === 'Refunded' ? document.getElementById('refundMode')?.value || null : null
             };
-
-            // Add refund fields only when relevant
-            if (payload.status === "Refunded" || payload.status === "To be Refunded") {
-                payload.refund_by = document.getElementById('refundBy')?.value || null;
-                payload.refund_reason = document.getElementById('refundReason')?.value || null;
-            } else {
-                payload.refund_by = null;
-                payload.refund_reason = null;
-            }
-            if (payload.status === "Refunded") {
-                payload.refund_recipient = document.getElementById('refundRecipient')?.value || null;
-                payload.refund_date = document.getElementById('refundDate')?.value || null;
-                payload.refund_mode = document.getElementById('refundMode')?.value || null;
-            } else {
-                payload.refund_recipient = null;
-                payload.refund_date = null;
-                payload.refund_mode = null;
-            }
-            
             const { error } = await saudiaClient.from('tickets').insert([payload]);
-            if (error) alert(error.message); else {
-                alert('Ticket saved successfully!');
-                document.getElementById('ticketNum').value = '';
-                document.getElementById('ticketType').value = 'Fresh Issue';
-                document.getElementById('ticketStatus').value = 'Flown';
-                document.getElementById('issueDate').value = '';
-                document.getElementById('issuerName').value = '';
-                document.getElementById('flightDate').value = '';
-                document.getElementById('extraReason').value = '';
-                document.getElementById('statusComment').value = '';
-                if (document.getElementById('refundRecipient')) document.getElementById('refundRecipient').value = '';
-                if (document.getElementById('refundDate')) document.getElementById('refundDate').value = '';
-                if (document.getElementById('refundMode')) document.getElementById('refundMode').value = '';
-                if (document.getElementById('refundBy')) document.getElementById('refundBy').value = '';
-                if (document.getElementById('refundReason')) document.getElementById('refundReason').value = '';
-                toggleDynamicFields();
-                getTickets();
-            }
+            if (error) return alert(error.message || 'Unable to save ticket.');
+            alert('Ticket saved successfully.');
+            clearTicketForm();
+            await getTickets();
         }
 
-        async function adminCreateUser(newEmail, newPassword, newName, newRole) {
-    const payload = {
-        email: newEmail,
-        password: newPassword,
-        full_name: newName,
-        user_role: newRole
-    };
-
-    const { data, error, functionName } = await invokeEdgeFunctionWithFallback(['create_user_by_admin', 'create-user'], {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-
-    if (error) {
-        console.error('Admin create user error:', { functionName, error, data });
-        alert("Error creating user: " + formatEdgeFunctionError(error));
-    } else {
-        alert("Account successfully created for " + newName);
-    }
-}
-
         async function updateTicket() {
-            if (!activeProfile || !canEditTickets()) return alert("Supervisor/Admin only.");
-            if (!selectedTicketId) return alert("Select a ticket row first.");
-
+            if (!canEditTickets()) return alert('Supervisor/Admin only.');
+            if (!selectedTicketId) return alert('Select a ticket row first.');
             const rawTicketNum = (document.getElementById('ticketNum').value || '').trim();
-            if (!rawTicketNum) return alert("Ticket Number is required.");
-            if (!/^\d{13}$/.test(rawTicketNum)) return alert("Ticket Number must be exactly 13 digits.");
-
+            if (!rawTicketNum) return alert('Ticket Number is required.');
+            if (!/^[0-9]{13}$/.test(rawTicketNum)) return alert('Ticket Number must be exactly 13 digits.');
             const type = document.getElementById('ticketType').value;
-            const reasonValue = document.getElementById('extraReason').value;
-            const issuerName = (document.getElementById('issuerName')?.value || '').trim();
-            const flightDate = document.getElementById('flightDate')?.value || null;
-
+            const status = document.getElementById('ticketStatus').value;
             const payload = {
                 ticket_num: rawTicketNum,
-                type: type,
-                status: document.getElementById('ticketStatus').value,
-                issue_date: document.getElementById('issueDate').value || null,
-                status_comment: document.getElementById('statusComment').value,
-                processed_by: activeProfile.full_name,
-                issuer_name: issuerName || null,
-                flight_date: flightDate,
-                
-                // Logic to route the reason to the specific column
-                reissue_reason: (type === "Re-issue") ? reasonValue : null,
-                rebook_reason: (type === "Re-booked") ? reasonValue : null,
-                upgrade_reason: (type === "Upgrade") ? reasonValue : null,
-                downgrade_reason: (type === "Downgrade") ? reasonValue : null
+                type,
+                status,
+                issue_date: document.getElementById('issueDate')?.value || null,
+                issuer_name: (document.getElementById('issuerName')?.value || '').trim() || null,
+                flight_date: document.getElementById('flightDate')?.value || null,
+                status_comment: document.getElementById('statusComment')?.value || null,
+                processed_by: activeProfile.full_name || activeUser.email || null,
+                reissue_reason: type === 'Re-issue' ? document.getElementById('extraReason')?.value || null : null,
+                rebook_reason: type === 'Re-booked' ? document.getElementById('extraReason')?.value || null : null,
+                upgrade_reason: type === 'Upgrade' ? document.getElementById('extraReason')?.value || null : null,
+                downgrade_reason: type === 'Downgrade' ? document.getElementById('extraReason')?.value || null : null,
+                refund_by: ['Refunded', 'To be Refunded'].includes(status) ? document.getElementById('refundBy')?.value || null : null,
+                refund_reason: ['Refunded', 'To be Refunded'].includes(status) ? document.getElementById('refundReason')?.value || null : null,
+                refund_recipient: status === 'Refunded' ? document.getElementById('refundRecipient')?.value || null : null,
+                refund_date: status === 'Refunded' ? document.getElementById('refundDate')?.value || null : null,
+                refund_mode: status === 'Refunded' ? document.getElementById('refundMode')?.value || null : null
             };
-
-            if (payload.status === "Refunded" || payload.status === "To be Refunded") {
-                payload.refund_by = document.getElementById('refundBy')?.value || null;
-                payload.refund_reason = document.getElementById('refundReason')?.value || null;
-            } else {
-                payload.refund_by = null;
-                payload.refund_reason = null;
-            }
-
-            if (payload.status === "Refunded") {
-                payload.refund_recipient = document.getElementById('refundRecipient')?.value || null;
-                payload.refund_date = document.getElementById('refundDate')?.value || null;
-                payload.refund_mode = document.getElementById('refundMode')?.value || null;
-            } else {
-                payload.refund_recipient = null;
-                payload.refund_date = null;
-                payload.refund_mode = null;
-            }
-
             const { error } = await saudiaClient.from('tickets').update(payload).eq('id', selectedTicketId);
-            if (error) return alert(error.message);
-            alert('Ticket updated successfully!');
+            if (error) return alert(error.message || 'Unable to update ticket.');
+            alert('Ticket updated successfully.');
+            clearTicketForm();
+            selectedTicketId = null;
             await getTickets();
         }
 
         async function deleteTicket() {
-            if (!activeProfile || !canEditTickets()) return alert("Supervisor/Admin only.");
-            if (!selectedTicketId) return alert("Select a ticket row first.");
-            if (!confirm("Delete this ticket permanently?")) return;
-
+            if (!canEditTickets()) return alert('Supervisor/Admin only.');
+            if (!selectedTicketId) return alert('Select a ticket row first.');
+            if (!confirm('Delete this ticket permanently?')) return;
             const { error } = await saudiaClient.from('tickets').delete().eq('id', selectedTicketId);
-            if (error) return alert(error.message);
-            alert('Ticket deleted successfully!');
-
+            if (error) return alert(error.message || 'Unable to delete ticket.');
+            alert('Ticket deleted successfully.');
+            clearTicketForm();
             selectedTicketId = null;
-            document.querySelectorAll('#tableBody tr.is-selected').forEach(el => el.classList.remove('is-selected'));
             await getTickets();
+        }
+
+        function clearTicketForm() {
+            document.getElementById('ticketNum').value = '';
+            document.getElementById('ticketType').value = 'Fresh Issue';
+            document.getElementById('ticketStatus').value = 'Flown';
+            document.getElementById('issueDate').value = '';
+            document.getElementById('issuerName').value = '';
+            document.getElementById('flightDate').value = '';
+            document.getElementById('extraReason').value = '';
+            document.getElementById('statusComment').value = '';
+            document.getElementById('refundRecipient').value = '';
+            document.getElementById('refundDate').value = '';
+            document.getElementById('refundMode').value = '';
+            document.getElementById('refundBy').value = '';
+            document.getElementById('refundReason').value = '';
+            toggleDynamicFields();
         }
 
         function toggleAllCheckboxes() {
@@ -1183,40 +1059,32 @@
             document.querySelectorAll('.export-check').forEach(cb => cb.checked = master);
         }
 
-        function filterTable() {
-            const s = document.getElementById('search').value.toLowerCase();
-            renderTable(ticketsList.filter(x => x.ticket_num.includes(s)));
-        }
-
         function exportSelectedToCSV() {
             const ids = Array.from(document.querySelectorAll('.export-check:checked')).map(cb => cb.getAttribute('data-id'));
-            if (!ids.length) return alert("Select tickets first.");
-            
+            if (!ids.length) return alert('Select tickets first.');
             const toExport = ticketsList.filter(t => ids.includes(String(t.id)));
-            // Added Upgrade and Downgrade columns to headers
-            let csv = "Ticket #,Type,Status,Date,Issuer,Upgrade Reason,Downgrade Reason,Comment,Staff\n";
-            
+            const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            let csv = 'Ticket #,Type,Status,Date,Issuer,Upgrade Reason,Downgrade Reason,Comment,Staff\n';
             toExport.forEach(t => {
-                const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
                 csv += [
                     cell(t.ticket_num),
                     cell(t.type),
                     cell(t.status),
                     cell(t.issue_date),
                     cell(t.issuer_name),
-                    cell(t.upgrade_reason || ''),
-                    cell(t.downgrade_reason || ''),
-                    cell(t.status_comment || ''),
+                    cell(t.upgrade_reason),
+                    cell(t.downgrade_reason),
+                    cell(t.status_comment),
                     cell(t.processed_by)
-                ].join(",") + "\n";
+                ].join(',') + '\n';
             });
-            
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Saudi_Airline_Detailed_Report_${new Date().toLocaleDateString()}.csv`;
+            a.download = `Saudi_Airline_Tickets_${new Date().toISOString().slice(0,10)}.csv`;
             a.click();
+            window.URL.revokeObjectURL(url);
         }
 
         applyUiPrefs();
