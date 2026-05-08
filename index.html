@@ -626,7 +626,7 @@
             
             (data || []).forEach(user => {
                 const row = body.insertRow();
-                const role = String(user.role || 'user').toLowerCase();
+                const role = String(user.role ?? user.user_role ?? 'user').toLowerCase();
                 const roleSelId = `role_${user.id}`;
 
                 row.innerHTML = `
@@ -649,14 +649,26 @@
 
         async function updateUserRole(userId, newRole) {
             if (!canManageUsers()) return alert("Admin only.");
-            const role = String(newRole || '').toLowerCase();
+            const role = String(newRole || '').trim().toLowerCase();
             if (!['user', 'supervisor', 'admin'].includes(role)) return alert("Invalid role.");
 
-            const { error } = await saudiaClient.from('profiles').update({ role }).eq('id', userId);
+            const { data, error } = await saudiaClient
+                .from('profiles')
+                .update({ role })
+                .eq('id', userId)
+                .select('id, role')
+                .single();
+
             if (error) {
                 console.error('Update role error:', error);
                 return alert("Error updating role: " + error.message);
             }
+
+            if (!data || String(data.role || '').toLowerCase() !== role) {
+                console.warn('Role update mismatch', data);
+                return alert("Role change was not saved correctly. Please refresh and try again.");
+            }
+
             alert("Role updated successfully.");
             loadUsers();
         }
@@ -831,6 +843,7 @@
             await ensureProfileForUser(activeUser);
             const { data } = await saudiaClient.from('profiles').select('*').eq('id', activeUser.id).single();
             activeProfile = data || { id: activeUser.id, full_name: activeUser.email, role: 'user' };
+            activeProfile.role = String(activeProfile.role ?? activeProfile.user_role ?? 'user').toLowerCase();
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             const roleLabel = (activeProfile.role || 'user').toUpperCase();
