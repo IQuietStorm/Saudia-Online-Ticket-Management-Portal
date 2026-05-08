@@ -656,15 +656,15 @@
                 .from('profiles')
                 .update({ role })
                 .eq('id', userId)
-                .select('id, role')
-                .single();
+                .select('id, role');
 
             if (error) {
                 console.error('Update role error:', error);
                 return alert("Error updating role: " + error.message);
             }
 
-            if (!data || String(data.role || '').toLowerCase() !== role) {
+            const updatedUser = Array.isArray(data) ? data[0] : data;
+            if (!updatedUser || String(updatedUser.role || '').toLowerCase() !== role) {
                 console.warn('Role update mismatch', data);
                 return alert("Role change was not saved correctly. Please refresh and try again.");
             }
