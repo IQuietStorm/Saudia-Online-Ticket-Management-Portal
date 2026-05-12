@@ -512,7 +512,7 @@
 
         let activeUser, activeProfile, ticketsList = [], selectedTicketId = null;
         let visibleTickets = [];
-        let authMode = 'signin'; // 'signin' | 'signup'
+        var authMode = 'signin'; // 'signin' | 'signup'
 
         function hasRole(role) {
             const r = (activeProfile?.role || 'user').toLowerCase();
