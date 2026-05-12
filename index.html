@@ -345,9 +345,8 @@
                     <label>Ticket Status</label>
                     <select id="ticketStatus" onchange="toggleDynamicFields()">
                         <option value="Flown">Flown</option>
-                        <option value="To be Refunded">To be Refunded</option>
-                        <option value="Refunded">Refunded</option>
-                        <option value="Suspended Class">Suspended Class</option>
+                        <option value="Refund">Refund</option>
+                        <option value="Suspended">Suspended</option>
                         <option value="U-Class">U-Class</option>
                         <option value="Z-Class">Z-Class</option>
                         <option value="N/A">N/A</option>
@@ -374,6 +373,18 @@
                             <input type="date" id="flightDate">
                         </div>
                         <div id="refund-box" style="display:none;">
+                            <label>Refund Status</label>
+                            <select id="refundStatus" onchange="toggleDynamicFields()">
+                                <option value="">Select...</option>
+                                <option value="Approved pending payment">Approved pending payment</option>
+                                <option value="Approved and paid">Approved and paid</option>
+                            </select>
+                            <label>Ticket value in Naira</label>
+                            <input type="number" id="ticketValueNaira" placeholder="Enter ticket value in Naira">
+                            <label>Refund value in Naira</label>
+                            <input type="number" id="refundValueNaira" placeholder="Enter refund value in Naira">
+                            <label>Tax</label>
+                            <input type="number" id="refundTax" placeholder="Enter tax amount">
                             <div id="refunded-only-box" style="display:none;">
                                 <label>Refund Recipient</label>
                                 <input type="text" id="refundRecipient" placeholder="Customer / Recipient name">
@@ -385,6 +396,7 @@
                                     <option value="Cash">Cash</option>
                                     <option value="Transfer">Transfer</option>
                                     <option value="Cheque">Cheque</option>
+                                    <option value="Exchanged">Exchanged</option>
                                 </select>
                             </div>
                             <label>Refunded By</label>
@@ -414,9 +426,8 @@
                     <select id="filterStatus" onchange="applyFiltersAndSort()">
                         <option value="">All</option>
                         <option value="Flown">Flown</option>
-                        <option value="To be Refunded">To be Refunded</option>
-                        <option value="Refunded">Refunded</option>
-                        <option value="Suspended Class">Suspended Class</option>
+                        <option value="Refund">Refund</option>
+                        <option value="Suspended">Suspended</option>
                         <option value="U-Class">U-Class</option>
                         <option value="Z-Class">Z-Class</option>
                         <option value="N/A">N/A</option>
@@ -890,6 +901,7 @@
         function toggleDynamicFields() {
             const type = document.getElementById('ticketType').value;
             const status = document.getElementById('ticketStatus').value;
+            const refundStatus = document.getElementById('refundStatus')?.value || "";
             
             // Show reason box for types that need it
             const showReason = (type === "Upgrade" || type === "Downgrade" || type === "Re-issue" || type === "Re-booked");
@@ -902,8 +914,8 @@
             else if (type === "Re-issue" || type === "Re-booked") reasonLabel.innerText = "Type Reason";
             
             document.getElementById('flown-box').style.display = (status === "Flown") ? "block" : "none";
-            document.getElementById('refund-box').style.display = (status === "Refunded" || status === "To be Refunded") ? "block" : "none";
-            document.getElementById('refunded-only-box').style.display = (status === "Refunded") ? "block" : "none";
+            document.getElementById('refund-box').style.display = (status === "Refund") ? "block" : "none";
+            document.getElementById('refunded-only-box').style.display = (status === "Refund" && refundStatus === "Approved and paid") ? "block" : "none";
         }
 
         async function getTickets() {
@@ -1008,7 +1020,7 @@
                 const row = body.insertRow();
                 let cls = 'row-na';
                 if(t.status === 'Flown') cls = 'row-flown';
-                if(t.status === 'Refunded' || t.status === 'To be Refunded') cls = 'row-refund';
+                if(t.status === 'Refund') cls = 'row-refund';
                 row.className = cls;
                 row.innerHTML = `<td><input type="checkbox" class="export-check" data-id="${escapeHtml(t.id)}"></td><td>${escapeHtml(t.ticket_num || '')}</td><td>${escapeHtml(t.type || '')}</td><td>${escapeHtml(t.status || '')}</td><td>${escapeHtml(t.issue_date || '-')}</td><td>${escapeHtml(t.processed_by || '')}</td>`;
                 row.onclick = (e) => { if(e.target.type !== 'checkbox') selectTicket(t, row); };
@@ -1049,6 +1061,14 @@
             
             document.getElementById('extraReason').value = reason || "";
             
+            const refundStatus = document.getElementById('refundStatus');
+            if (refundStatus) refundStatus.value = t.refund_status || "";
+            const ticketValueNaira = document.getElementById('ticketValueNaira');
+            if (ticketValueNaira) ticketValueNaira.value = t.ticket_value_naira || "";
+            const refundValueNaira = document.getElementById('refundValueNaira');
+            if (refundValueNaira) refundValueNaira.value = t.refund_value_naira || "";
+            const refundTax = document.getElementById('refundTax');
+            if (refundTax) refundTax.value = t.refund_tax || "";
             const refundRecipient = document.getElementById('refundRecipient');
             if (refundRecipient) refundRecipient.value = t.refund_recipient || "";
             const refundDate = document.getElementById('refundDate');
@@ -1094,14 +1114,22 @@
             };
 
             // Add refund fields only when relevant
-            if (payload.status === "Refunded" || payload.status === "To be Refunded") {
+            if (payload.status === "Refund") {
+                payload.refund_status = document.getElementById('refundStatus')?.value || null;
+                payload.ticket_value_naira = parseFloat(document.getElementById('ticketValueNaira')?.value) || null;
+                payload.refund_value_naira = parseFloat(document.getElementById('refundValueNaira')?.value) || null;
+                payload.refund_tax = parseFloat(document.getElementById('refundTax')?.value) || null;
                 payload.refund_by = document.getElementById('refundBy')?.value || null;
                 payload.refund_reason = document.getElementById('refundReason')?.value || null;
             } else {
+                payload.refund_status = null;
+                payload.ticket_value_naira = null;
+                payload.refund_value_naira = null;
+                payload.refund_tax = null;
                 payload.refund_by = null;
                 payload.refund_reason = null;
             }
-            if (payload.status === "Refunded") {
+            if (payload.status === "Refund" && document.getElementById('refundStatus')?.value === "Approved and paid") {
                 payload.refund_recipient = document.getElementById('refundRecipient')?.value || null;
                 payload.refund_date = document.getElementById('refundDate')?.value || null;
                 payload.refund_mode = document.getElementById('refundMode')?.value || null;
@@ -1122,6 +1150,10 @@
                 document.getElementById('flightDate').value = '';
                 document.getElementById('extraReason').value = '';
                 document.getElementById('statusComment').value = '';
+                if (document.getElementById('refundStatus')) document.getElementById('refundStatus').value = '';
+                if (document.getElementById('ticketValueNaira')) document.getElementById('ticketValueNaira').value = '';
+                if (document.getElementById('refundValueNaira')) document.getElementById('refundValueNaira').value = '';
+                if (document.getElementById('refundTax')) document.getElementById('refundTax').value = '';
                 if (document.getElementById('refundRecipient')) document.getElementById('refundRecipient').value = '';
                 if (document.getElementById('refundDate')) document.getElementById('refundDate').value = '';
                 if (document.getElementById('refundMode')) document.getElementById('refundMode').value = '';
@@ -1194,15 +1226,23 @@
                 downgrade_reason: (type === "Downgrade") ? reasonValue : null
             };
 
-            if (payload.status === "Refunded" || payload.status === "To be Refunded") {
+            if (payload.status === "Refund") {
+                payload.refund_status = document.getElementById('refundStatus')?.value || null;
+                payload.ticket_value_naira = parseFloat(document.getElementById('ticketValueNaira')?.value) || null;
+                payload.refund_value_naira = parseFloat(document.getElementById('refundValueNaira')?.value) || null;
+                payload.refund_tax = parseFloat(document.getElementById('refundTax')?.value) || null;
                 payload.refund_by = document.getElementById('refundBy')?.value || null;
                 payload.refund_reason = document.getElementById('refundReason')?.value || null;
             } else {
+                payload.refund_status = null;
+                payload.ticket_value_naira = null;
+                payload.refund_value_naira = null;
+                payload.refund_tax = null;
                 payload.refund_by = null;
                 payload.refund_reason = null;
             }
 
-            if (payload.status === "Refunded") {
+            if (payload.status === "Refund" && document.getElementById('refundStatus')?.value === "Approved and paid") {
                 payload.refund_recipient = document.getElementById('refundRecipient')?.value || null;
                 payload.refund_date = document.getElementById('refundDate')?.value || null;
                 payload.refund_mode = document.getElementById('refundMode')?.value || null;
