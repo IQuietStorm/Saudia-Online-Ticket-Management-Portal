@@ -376,7 +376,6 @@
                             <label>Refund Status</label>
                             <select id="refundStatus" onchange="toggleDynamicFields()">
                                 <option value="">Select...</option>
-                                <option value="Pending approval">Pending approval</option>
                                 <option value="Approved pending payment">Approved pending payment</option>
                                 <option value="Approved and paid">Approved and paid</option>
                             </select>
@@ -391,14 +390,8 @@
                                 <input type="text" id="refundRecipient" placeholder="Customer / Recipient name">
                                 <label>Date of Refund</label>
                                 <input type="date" id="refundDate">
-                                <label>Mode of Refund</label>
-                                <select id="refundMode">
-                                    <option value="">Select mode...</option>
-                                    <option value="Cash">Cash</option>
-                                    <option value="Transfer">Transfer</option>
-                                    <option value="Cheque">Cheque</option>
-                                    <option value="Exchanged">Exchanged</option>
-                                </select>
+                                <label>Refund amount (in Naira)</label>
+                                <input type="number" id="refundAmountNaira" placeholder="Enter actual refund amount paid">
                             </div>
                             <label>Refunded By</label>
                             <input type="text" id="refundBy" placeholder="Staff name">
@@ -1074,8 +1067,8 @@
             if (refundRecipient) refundRecipient.value = t.refund_recipient || "";
             const refundDate = document.getElementById('refundDate');
             if (refundDate) refundDate.value = t.refund_date || "";
-            const refundMode = document.getElementById('refundMode');
-            if (refundMode) refundMode.value = t.refund_mode || "";
+            const refundAmountNaira = document.getElementById('refundAmountNaira');
+            if (refundAmountNaira) refundAmountNaira.value = t.refund_amount_naira || "";
             const refundBy = document.getElementById('refundBy');
             if (refundBy) refundBy.value = t.refund_by || "";
             const refundReason = document.getElementById('refundReason');
@@ -1133,11 +1126,11 @@
             if (payload.status === "Refund" && document.getElementById('refundStatus')?.value === "Approved and paid") {
                 payload.refund_recipient = document.getElementById('refundRecipient')?.value || null;
                 payload.refund_date = document.getElementById('refundDate')?.value || null;
-                payload.refund_mode = document.getElementById('refundMode')?.value || null;
+                payload.refund_amount_naira = parseFloat(document.getElementById('refundAmountNaira')?.value) || null;
             } else {
                 payload.refund_recipient = null;
                 payload.refund_date = null;
-                payload.refund_mode = null;
+                payload.refund_amount_naira = null;
             }
             
             const { error } = await saudiaClient.from('tickets').insert([payload]);
@@ -1157,7 +1150,7 @@
                 if (document.getElementById('refundTax')) document.getElementById('refundTax').value = '';
                 if (document.getElementById('refundRecipient')) document.getElementById('refundRecipient').value = '';
                 if (document.getElementById('refundDate')) document.getElementById('refundDate').value = '';
-                if (document.getElementById('refundMode')) document.getElementById('refundMode').value = '';
+                if (document.getElementById('refundAmountNaira')) document.getElementById('refundAmountNaira').value = '';
                 if (document.getElementById('refundBy')) document.getElementById('refundBy').value = '';
                 if (document.getElementById('refundReason')) document.getElementById('refundReason').value = '';
                 toggleDynamicFields();
@@ -1246,11 +1239,11 @@
             if (payload.status === "Refund" && document.getElementById('refundStatus')?.value === "Approved and paid") {
                 payload.refund_recipient = document.getElementById('refundRecipient')?.value || null;
                 payload.refund_date = document.getElementById('refundDate')?.value || null;
-                payload.refund_mode = document.getElementById('refundMode')?.value || null;
+                payload.refund_amount_naira = parseFloat(document.getElementById('refundAmountNaira')?.value) || null;
             } else {
                 payload.refund_recipient = null;
                 payload.refund_date = null;
-                payload.refund_mode = null;
+                payload.refund_amount_naira = null;
             }
 
             const { error } = await saudiaClient.from('tickets').update(payload).eq('id', selectedTicketId);
