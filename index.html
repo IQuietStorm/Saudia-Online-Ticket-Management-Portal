@@ -440,6 +440,8 @@
                             <input type="date" id="issueDate">
                             <label>Name of Issuer</label>
                             <input type="text" id="issuerName">
+                            <label>Route</label>
+                            <input type="text" id="ticketRoute" placeholder="Enter route details">
                         </div>
                         <div id="reason-box" style="display:none;">
                             <label id="reasonLabel">Reason</label>
@@ -1182,6 +1184,8 @@
             if (refundBy) refundBy.value = t.refund_by || "";
             const refundReason = document.getElementById('refundReason');
             if (refundReason) refundReason.value = t.refund_reason || "";
+            const ticketRoute = document.getElementById('ticketRoute');
+            if (ticketRoute) ticketRoute.value = t.route || "";
             
             toggleDynamicFields();
 
@@ -1222,6 +1226,10 @@
                 <div class="preview-field">
                     <div class="preview-field-label">Issuer Name</div>
                     <div class="preview-field-value">${escapeHtml(t.issuer_name || '-')}</div>
+                </div>
+                <div class="preview-field">
+                    <div class="preview-field-label">Route</div>
+                    <div class="preview-field-value">${escapeHtml(t.route || '-')}</div>
                 </div>
             `;
             
@@ -1363,6 +1371,10 @@
                             <div class="ticket-detail-label">Issuer Name</div>
                             <div class="ticket-detail-value">${escapeHtml(t.issuer_name || '-')}</div>
                         </div>
+                        <div class="ticket-detail-item">
+                            <div class="ticket-detail-label">Route</div>
+                            <div class="ticket-detail-value">${escapeHtml(t.route || '-')}</div>
+                        </div>
             `;
             
             if (t.status === "Flown" && t.flight_date) {
@@ -1482,6 +1494,7 @@
                 processed_by: activeProfile.full_name,
                 issuer_name: issuerName || null,
                 flight_date: flightDate,
+                route: document.getElementById('ticketRoute')?.value || null,
                 
                 // Logic to route the reason to the specific column
                 reissue_reason: (type === "Re-issue") ? reasonValue : null,
@@ -1525,6 +1538,7 @@
                 document.getElementById('issueDate').value = '';
                 document.getElementById('issuerName').value = '';
                 document.getElementById('flightDate').value = '';
+                document.getElementById('ticketRoute').value = '';
                 document.getElementById('extraReason').value = '';
                 document.getElementById('statusComment').value = '';
                 if (document.getElementById('refundStatus')) document.getElementById('refundStatus').value = '';
@@ -1595,6 +1609,7 @@
                 processed_by: activeProfile.full_name,
                 issuer_name: issuerName || null,
                 flight_date: flightDate,
+                route: document.getElementById('ticketRoute')?.value || null,
                 
                 // Logic to route the reason to the specific column
                 reissue_reason: (type === "Re-issue") ? reasonValue : null,
