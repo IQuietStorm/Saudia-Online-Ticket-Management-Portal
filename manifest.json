@@ -1,7 +1,7 @@
 {
-  "name": "Saudia Cloud TMS",
-  "short_name": "Saudia TMS",
-  "description": "Saudi Airline Ticket Management System",
+  "name": "Saudia Cloud Ticket Database",
+  "short_name": "Saudia TDB",
+  "description": "Saudi Airline Ticket Database",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#f0f2f0",
