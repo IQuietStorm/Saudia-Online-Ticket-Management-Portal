@@ -442,6 +442,12 @@
                             <input type="text" id="issuerName">
                             <label>Route</label>
                             <input type="text" id="ticketRoute" placeholder="Enter route details">
+                            <label>Flight Type</label>
+                            <select id="flightType">
+                                <option value="">Select...</option>
+                                <option value="One-way">One-way</option>
+                                <option value="Roundtrip">Roundtrip</option>
+                            </select>
                         </div>
                         <div id="reason-box" style="display:none;">
                             <label id="reasonLabel">Reason</label>
@@ -1156,6 +1162,8 @@
             document.getElementById('statusComment').value = t.status_comment || "";
             document.getElementById('issuerName').value = t.issuer_name || "";
             document.getElementById('flightDate').value = t.flight_date || "";
+            const flightType = document.getElementById('flightType');
+            if (flightType) flightType.value = t.flight_type || "";
             
             // Logic to pull from the correct column based on type
             let reason = "";
@@ -1230,6 +1238,10 @@
                 <div class="preview-field">
                     <div class="preview-field-label">Route</div>
                     <div class="preview-field-value">${escapeHtml(t.route || '-')}</div>
+                </div>
+                <div class="preview-field">
+                    <div class="preview-field-label">Flight Type</div>
+                    <div class="preview-field-value">${escapeHtml(t.flight_type || '-')}</div>
                 </div>
             `;
             
@@ -1375,6 +1387,10 @@
                             <div class="ticket-detail-label">Route</div>
                             <div class="ticket-detail-value">${escapeHtml(t.route || '-')}</div>
                         </div>
+                        <div class="ticket-detail-item">
+                            <div class="ticket-detail-label">Flight Type</div>
+                            <div class="ticket-detail-value">${escapeHtml(t.flight_type || '-')}</div>
+                        </div>
             `;
             
             if (t.status === "Flown" && t.flight_date) {
@@ -1495,6 +1511,7 @@
                 issuer_name: issuerName || null,
                 flight_date: flightDate,
                 route: document.getElementById('ticketRoute')?.value || null,
+                flight_type: document.getElementById('flightType')?.value || null,
                 
                 // Logic to route the reason to the specific column
                 reissue_reason: (type === "Re-issue") ? reasonValue : null,
@@ -1539,6 +1556,8 @@
                 document.getElementById('issuerName').value = '';
                 document.getElementById('flightDate').value = '';
                 document.getElementById('ticketRoute').value = '';
+                const flightTypeReset = document.getElementById('flightType');
+                if (flightTypeReset) flightTypeReset.value = '';
                 document.getElementById('extraReason').value = '';
                 document.getElementById('statusComment').value = '';
                 if (document.getElementById('refundStatus')) document.getElementById('refundStatus').value = '';
@@ -1610,6 +1629,7 @@
                 issuer_name: issuerName || null,
                 flight_date: flightDate,
                 route: document.getElementById('ticketRoute')?.value || null,
+                flight_type: document.getElementById('flightType')?.value || null,
                 
                 // Logic to route the reason to the specific column
                 reissue_reason: (type === "Re-issue") ? reasonValue : null,
