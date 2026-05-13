@@ -650,6 +650,7 @@
         }
 
         async function logout() {
+            stopInactiveTimers();
             await saudiaClient.auth.signOut();
             activeUser = null;
             activeProfile = null;
@@ -992,6 +993,8 @@
             activeProfile.role = String(activeProfile.role ?? activeProfile.user_role ?? 'user').toLowerCase();
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
+            document.getElementById('admin-dashboard').style.display = 'none';
+            document.getElementById('tickets-container').style.display = 'block';
             const roleLabel = (activeProfile.role || 'user').toUpperCase();
             document.getElementById('display-name').innerText = `${activeProfile.full_name || activeUser.email} (${roleLabel})`;
 
@@ -1006,6 +1009,9 @@
             const adminDashBtn = document.getElementById('admin-dash-btn');
             if (adminDashBtn) adminDashBtn.style.display = canManageUsers() ? 'inline-block' : 'none';
             getTickets();
+
+            // Start inactivity timers
+            startInactiveTimers();
         }
 
         function toggleDynamicFields() {
@@ -1739,6 +1745,43 @@
         applyUiPrefs();
         setAuthMode('signin');
         initAuth();
+
+        // Inactivity timers
+        let inactiveStart = null;
+        let reloadTimer = null;
+        let logoutTimer = null;
+
+        function startInactiveTimers() {
+            if (!activeUser) return; // Only if logged in
+            inactiveStart = Date.now();
+            reloadTimer = setTimeout(() => window.location.reload(), 5 * 60 * 1000); // 5 minutes
+            logoutTimer = setTimeout(() => logout(), 10 * 60 * 1000); // 10 minutes
+        }
+
+        function stopInactiveTimers() {
+            if (reloadTimer) clearTimeout(reloadTimer);
+            if (logoutTimer) clearTimeout(logoutTimer);
+            inactiveStart = null;
+            reloadTimer = null;
+            logoutTimer = null;
+        }
+
+        // Event listeners for inactivity
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && activeUser) {
+                startInactiveTimers();
+            } else {
+                stopInactiveTimers();
+            }
+        });
+
+        window.addEventListener('online', () => {
+            stopInactiveTimers();
+        });
+
+        window.addEventListener('offline', () => {
+            if (activeUser) startInactiveTimers();
+        });
     </script>
 </body>
 </html>
