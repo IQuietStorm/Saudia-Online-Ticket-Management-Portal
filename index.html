@@ -1521,7 +1521,7 @@
                 status: document.getElementById('ticketStatus').value,
                 issue_date: document.getElementById('issueDate').value || null,
                 status_comment: document.getElementById('statusComment').value,
-                processed_by: activeProfile.full_name,
+                processed_by: ticketsList.find(t => t.id === selectedTicketId)?.processed_by || activeProfile.full_name,
                 issuer_name: issuerName || null,
                 flight_date: flightDate,
                 route: document.getElementById('ticketRoute')?.value || null,
