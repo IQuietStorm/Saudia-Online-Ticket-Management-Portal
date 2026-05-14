@@ -641,12 +641,18 @@
         async function initAuth() {
             const { data, error } = await saudiaClient.auth.getSession();
             if (!error && data?.session?.user) {
-                activeUser = data.session.user;
-                loadApp();
-                return;
+                // Prevent silent reuse of a previously stored session from another account.
+                await saudiaClient.auth.signOut();
             }
+            activeUser = null;
+            activeProfile = null;
+            selectedTicketId = null;
             document.getElementById('login-screen').style.display = 'flex';
             document.getElementById('main-app').style.display = 'none';
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            if (document.getElementById('signupFullName')) document.getElementById('signupFullName').value = '';
+            setAuthMode('signin');
         }
 
         async function logout() {
