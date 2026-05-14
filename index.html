@@ -657,6 +657,7 @@
 
         async function logout() {
             stopInactiveTimers();
+            stopGeneralInactivityTimer();
             await saudiaClient.auth.signOut();
             activeUser = null;
             activeProfile = null;
@@ -1018,6 +1019,7 @@
 
             // Start inactivity timers
             startInactiveTimers();
+            startGeneralInactivityTimer();
         }
 
         function toggleDynamicFields() {
@@ -1558,6 +1560,12 @@
                 payload.refund_amount_naira = null;
             }
             
+            // Check for duplicate ticket number
+            const { data: existing } = await saudiaClient.from('tickets').select('id').eq('ticket_num', rawTicketNum).single();
+            if (existing) {
+                return alert("A ticket with this number already exists. Please use a different ticket number.");
+            }
+            
             const { error } = await saudiaClient.from('tickets').insert([payload]);
             if (error) alert(error.message); else {
                 alert('Ticket saved successfully!');
@@ -1756,6 +1764,7 @@
         let inactiveStart = null;
         let reloadTimer = null;
         let logoutTimer = null;
+        let generalLogoutTimer = null;
 
         function startInactiveTimers() {
             if (!activeUser) return; // Only if logged in
@@ -1770,6 +1779,21 @@
             inactiveStart = null;
             reloadTimer = null;
             logoutTimer = null;
+        }
+
+        function startGeneralInactivityTimer() {
+            if (!activeUser) return;
+            if (generalLogoutTimer) clearTimeout(generalLogoutTimer);
+            generalLogoutTimer = setTimeout(() => logout(), 30 * 60 * 1000); // 30 minutes general inactivity
+        }
+
+        function resetGeneralInactivityTimer() {
+            startGeneralInactivityTimer();
+        }
+
+        function stopGeneralInactivityTimer() {
+            if (generalLogoutTimer) clearTimeout(generalLogoutTimer);
+            generalLogoutTimer = null;
         }
 
         // Event listeners for inactivity
@@ -1788,6 +1812,13 @@
         window.addEventListener('offline', () => {
             if (activeUser) startInactiveTimers();
         });
+
+        // General inactivity reset on user activity
+        document.addEventListener('mousemove', resetGeneralInactivityTimer);
+        document.addEventListener('keydown', resetGeneralInactivityTimer);
+        document.addEventListener('click', resetGeneralInactivityTimer);
+        document.addEventListener('scroll', resetGeneralInactivityTimer);
+        document.addEventListener('touchstart', resetGeneralInactivityTimer);
     </script>
 </body>
 </html>
