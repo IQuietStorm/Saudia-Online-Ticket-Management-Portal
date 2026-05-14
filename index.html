@@ -1760,46 +1760,6 @@
         setAuthMode('signin');
         initAuth();
 
-       
-
-        function startGeneralInactivityTimer() {
-            if (!activeUser) return;
-            if (generalLogoutTimer) clearTimeout(generalLogoutTimer);
-            generalLogoutTimer = setTimeout(() => logout(), 30 * 60 * 1000); // 30 minutes general inactivity
-        }
-
-        function resetGeneralInactivityTimer() {
-            startGeneralInactivityTimer();
-        }
-
-        function stopGeneralInactivityTimer() {
-            if (generalLogoutTimer) clearTimeout(generalLogoutTimer);
-            generalLogoutTimer = null;
-        }
-
-        // Event listeners for inactivity
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && activeUser) {
-                startInactiveTimers();
-            } else {
-                stopInactiveTimers();
-            }
-        });
-
-        window.addEventListener('online', () => {
-            stopInactiveTimers();
-        });
-
-        window.addEventListener('offline', () => {
-            if (activeUser) startInactiveTimers();
-        });
-
-        // General inactivity reset on user activity
-        document.addEventListener('mousemove', resetGeneralInactivityTimer);
-        document.addEventListener('keydown', resetGeneralInactivityTimer);
-        document.addEventListener('click', resetGeneralInactivityTimer);
-        document.addEventListener('scroll', resetGeneralInactivityTimer);
-        document.addEventListener('touchstart', resetGeneralInactivityTimer);
-    </script>
+            </script>
 </body>
 </html>
