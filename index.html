@@ -342,7 +342,7 @@
                 <img src="logo.png" alt="Logo" class="login-logo" onerror="this.style.display='none'">
                 <h1 style="color: var(--islamic-green); margin:0;">SAUDI AIRLINE</h1>
             </div>
-            <p id="auth-title" style="color: var(--saudia-gold); font-weight: bold;">CLOUD TDB LOGIN</p>
+            <p id="auth-title" style="color: var(--saudia-gold); font-weight: bold;">CLOUD TMS LOGIN</p>
 
             <div class="toggle-row" style="justify-content:center; margin: 10px 0 18px;">
                 <button id="auth-signin-btn" class="mini-btn alt" onclick="setAuthMode('signin')">Sign In</button>
@@ -1121,9 +1121,6 @@
             const flightTypeLabel = document.getElementById('flightTypeLabel');
             if (flightTypeLabel) flightTypeLabel.style.display = minimal ? 'none' : '';
 
-            const issuePeriodBox = document.getElementById('issue-period-box');
-            if (issuePeriodBox) issuePeriodBox.style.display = minimal ? 'none' : 'block';
-
             const showEmdReason = isEMD && !isCANX;
             const showTypeReason = !minimal && (type === "Re-issue" || type === "Re-booked");
             document.getElementById('reason-box').style.display = (showEmdReason || showTypeReason) ? "block" : "none";
@@ -1657,8 +1654,6 @@
             if (minimal) {
                 payload.flight_date = null;
                 payload.flight_type = null;
-                payload.issue_period_from = null;
-                payload.issue_period_to = null;
                 payload.status_comment = null;
                 if (payload.status === "CANX") {
                     payload.emd_reason = null;
@@ -1801,8 +1796,6 @@
             if (minimal) {
                 payload.flight_date = null;
                 payload.flight_type = null;
-                payload.issue_period_from = null;
-                payload.issue_period_to = null;
                 payload.status_comment = null;
                 if (payload.status === "CANX") {
                     payload.emd_reason = null;
