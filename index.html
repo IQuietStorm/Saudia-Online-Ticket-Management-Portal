@@ -477,6 +477,10 @@
                             <label id="reasonLabel">Reason</label>
                             <input type="text" id="extraReason" placeholder="Enter reason">
                         </div>
+                        <div id="previous-ticket-box" style="display:none;">
+                            <label>Previous Ticket Number</label>
+                            <input type="text" id="previousTicketNum" placeholder="Enter previous ticket number" maxlength="13">
+                        </div>
                         <div id="status-comment-box" style="display:none;">
                             <label>Ticket Comment</label>
                             <input type="text" id="statusComment" placeholder="Additional details">
@@ -486,6 +490,12 @@
                             <input type="date" id="flightDate">
                         </div>
                         <div id="entry-timestamp-display"></div>
+                        <div id="ticket-value-box">
+                            <label>Ticket Value (Naira)</label>
+                            <input type="number" id="ticketValueNaira" placeholder="Enter ticket value in Naira">
+                            <label>Tax (Naira)</label>
+                            <input type="number" id="refundTax" placeholder="Enter tax amount">
+                        </div>
                         <div id="refund-box" style="display:none;">
                             <label>Refund Status</label>
                             <select id="refundStatus" onchange="toggleDynamicFields()">
@@ -494,12 +504,8 @@
                                 <option value="Approved pending payment">Approved pending payment</option>
                                 <option value="Approved and paid">Approved and paid</option>
                             </select>
-                            <label>Ticket value in Naira</label>
-                            <input type="number" id="ticketValueNaira" placeholder="Enter ticket value in Naira">
                             <label>Refund value in Naira</label>
                             <input type="number" id="refundValueNaira" placeholder="Enter refund value in Naira">
-                            <label>Tax</label>
-                            <input type="number" id="refundTax" placeholder="Enter tax amount">
                             <div id="refunded-only-box" style="display:none;">
                                 <label>Refund Recipient</label>
                                 <input type="text" id="refundRecipient" placeholder="Customer / Recipient name">
@@ -1123,7 +1129,9 @@
 
             const showEmdReason = isEMD && !isCANX;
             const showTypeReason = !minimal && (type === "Re-issue" || type === "Re-booked");
+            const showPreviousTicket = type === "Re-issue" || type === "Re-booked";
             document.getElementById('reason-box').style.display = (showEmdReason || showTypeReason) ? "block" : "none";
+            document.getElementById('previous-ticket-box').style.display = showPreviousTicket ? "block" : "none";
 
             const reasonLabel = document.getElementById('reasonLabel');
             if (isEMD) reasonLabel.innerText = "Reason for EMD";
@@ -1273,6 +1281,8 @@
             if (flightType) flightType.value = t.flight_type || "";
             
             document.getElementById('extraReason').value = getReasonFromTicket(t) || "";
+            const previousTicketNum = document.getElementById('previousTicketNum');
+            if (previousTicketNum) previousTicketNum.value = t.previous_ticket_num || "";
             const issuePeriodFrom = document.getElementById('issuePeriodFrom');
             if (issuePeriodFrom) issuePeriodFrom.value = t.issue_period_from || "";
             const issuePeriodTo = document.getElementById('issuePeriodTo');
@@ -1379,7 +1389,26 @@
                     </div>
                 `;
             }
-            
+            if ((t.type === "Re-issue" || t.type === "Re-booked") && t.previous_ticket_num) {
+                html += `
+                    <div class="preview-field">
+                        <div class="preview-field-label">Previous Ticket Number</div>
+                        <div class="preview-field-value">${escapeHtml(t.previous_ticket_num)}</div>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="preview-field">
+                    <div class="preview-field-label">Ticket Value (₦)</div>
+                    <div class="preview-field-value">${t.ticket_value_naira != null && t.ticket_value_naira !== '' ? Number(t.ticket_value_naira).toLocaleString() : '-'}</div>
+                </div>
+                <div class="preview-field">
+                    <div class="preview-field-label">Tax (₦)</div>
+                    <div class="preview-field-value">${t.refund_tax != null && t.refund_tax !== '' ? Number(t.refund_tax).toLocaleString() : '-'}</div>
+                </div>
+            `;
+
             if (t.status === "Refund") {
                 html += `
                     <div class="preview-field">
@@ -1387,16 +1416,8 @@
                         <div class="preview-field-value">${escapeHtml(t.refund_status || '-')}</div>
                     </div>
                     <div class="preview-field">
-                        <div class="preview-field-label">Ticket Value (₦)</div>
-                        <div class="preview-field-value">${t.ticket_value_naira ? t.ticket_value_naira.toLocaleString() : '-'}</div>
-                    </div>
-                    <div class="preview-field">
                         <div class="preview-field-label">Refund Value (₦)</div>
                         <div class="preview-field-value">${t.refund_value_naira ? t.refund_value_naira.toLocaleString() : '-'}</div>
-                    </div>
-                    <div class="preview-field">
-                        <div class="preview-field-label">Tax (₦)</div>
-                        <div class="preview-field-value">${t.refund_tax ? t.refund_tax.toLocaleString() : '-'}</div>
                     </div>
                 `;
                 
@@ -1534,12 +1555,31 @@
                         </div>
                 `;
             }
-            
+            if ((t.type === "Re-issue" || t.type === "Re-booked") && t.previous_ticket_num) {
+                html += `
+                        <div class="ticket-detail-item">
+                            <div class="ticket-detail-label">Previous Ticket Number</div>
+                            <div class="ticket-detail-value">${escapeHtml(t.previous_ticket_num)}</div>
+                        </div>
+                `;
+            }
+
             html += `
                     </div>
                     <div class="ticket-detail-group">
             `;
             
+            html += `
+                        <div class="ticket-detail-item">
+                            <div class="ticket-detail-label">Ticket Value (₦)</div>
+                            <div class="ticket-detail-value">${t.ticket_value_naira != null && t.ticket_value_naira !== '' ? Number(t.ticket_value_naira).toLocaleString() : '-'}</div>
+                        </div>
+                        <div class="ticket-detail-item">
+                            <div class="ticket-detail-label">Tax (₦)</div>
+                            <div class="ticket-detail-value">${t.refund_tax != null && t.refund_tax !== '' ? Number(t.refund_tax).toLocaleString() : '-'}</div>
+                        </div>
+            `;
+
             if (t.status === "Refund") {
                 html += `
                         <div class="ticket-detail-item">
@@ -1547,16 +1587,8 @@
                             <div class="ticket-detail-value">${escapeHtml(t.refund_status || '-')}</div>
                         </div>
                         <div class="ticket-detail-item">
-                            <div class="ticket-detail-label">Ticket Value (₦)</div>
-                            <div class="ticket-detail-value">${t.ticket_value_naira ? t.ticket_value_naira.toLocaleString() : '-'}</div>
-                        </div>
-                        <div class="ticket-detail-item">
                             <div class="ticket-detail-label">Refund Value (₦)</div>
                             <div class="ticket-detail-value">${t.refund_value_naira ? t.refund_value_naira.toLocaleString() : '-'}</div>
-                        </div>
-                        <div class="ticket-detail-item">
-                            <div class="ticket-detail-label">Tax (₦)</div>
-                            <div class="ticket-detail-value">${t.refund_tax ? t.refund_tax.toLocaleString() : '-'}</div>
                         </div>
                 `;
                 
@@ -1647,7 +1679,10 @@
                 rebook_reason: (type === "Re-booked") ? reasonValue : null,
                 emd_reason: (type === "EMD") ? reasonValue : null,
                 upgrade_reason: null,
-                downgrade_reason: null
+                downgrade_reason: null,
+                previous_ticket_num: (type === "Re-issue" || type === "Re-booked")
+                    ? ((document.getElementById('previousTicketNum')?.value || '').trim() || null)
+                    : null
             };
 
             const minimal = type === "EMD" || payload.status === "CANX";
@@ -1659,22 +1694,21 @@
                     payload.emd_reason = null;
                     payload.reissue_reason = null;
                     payload.rebook_reason = null;
+                    payload.previous_ticket_num = null;
                 }
             }
 
-            // Add refund fields only when relevant (not for EMD / CANX minimal tickets)
+            payload.ticket_value_naira = parseFloat(document.getElementById('ticketValueNaira')?.value) || null;
+            payload.refund_tax = parseFloat(document.getElementById('refundTax')?.value) || null;
+
             if (payload.status === "Refund") {
                 payload.refund_status = document.getElementById('refundStatus')?.value || null;
-                payload.ticket_value_naira = parseFloat(document.getElementById('ticketValueNaira')?.value) || null;
                 payload.refund_value_naira = parseFloat(document.getElementById('refundValueNaira')?.value) || null;
-                payload.refund_tax = parseFloat(document.getElementById('refundTax')?.value) || null;
                 payload.refund_by = document.getElementById('refundBy')?.value || null;
                 payload.refund_reason = document.getElementById('refundReason')?.value || null;
             } else {
                 payload.refund_status = null;
-                payload.ticket_value_naira = null;
                 payload.refund_value_naira = null;
-                payload.refund_tax = null;
                 payload.refund_by = null;
                 payload.refund_reason = null;
             }
@@ -1707,6 +1741,7 @@
                 const flightTypeReset = document.getElementById('flightType');
                 if (flightTypeReset) flightTypeReset.value = '';
                 document.getElementById('extraReason').value = '';
+                if (document.getElementById('previousTicketNum')) document.getElementById('previousTicketNum').value = '';
                 document.getElementById('statusComment').value = '';
                 if (document.getElementById('refundStatus')) document.getElementById('refundStatus').value = '';
                 if (document.getElementById('ticketValueNaira')) document.getElementById('ticketValueNaira').value = '';
@@ -1789,7 +1824,10 @@
                 rebook_reason: (type === "Re-booked") ? reasonValue : null,
                 emd_reason: (type === "EMD") ? reasonValue : null,
                 upgrade_reason: null,
-                downgrade_reason: null
+                downgrade_reason: null,
+                previous_ticket_num: (type === "Re-issue" || type === "Re-booked")
+                    ? ((document.getElementById('previousTicketNum')?.value || '').trim() || null)
+                    : null
             };
 
             const minimal = type === "EMD" || payload.status === "CANX";
@@ -1801,21 +1839,21 @@
                     payload.emd_reason = null;
                     payload.reissue_reason = null;
                     payload.rebook_reason = null;
+                    payload.previous_ticket_num = null;
                 }
             }
 
+            payload.ticket_value_naira = parseFloat(document.getElementById('ticketValueNaira')?.value) || null;
+            payload.refund_tax = parseFloat(document.getElementById('refundTax')?.value) || null;
+
             if (payload.status === "Refund") {
                 payload.refund_status = document.getElementById('refundStatus')?.value || null;
-                payload.ticket_value_naira = parseFloat(document.getElementById('ticketValueNaira')?.value) || null;
                 payload.refund_value_naira = parseFloat(document.getElementById('refundValueNaira')?.value) || null;
-                payload.refund_tax = parseFloat(document.getElementById('refundTax')?.value) || null;
                 payload.refund_by = document.getElementById('refundBy')?.value || null;
                 payload.refund_reason = document.getElementById('refundReason')?.value || null;
             } else {
                 payload.refund_status = null;
-                payload.ticket_value_naira = null;
                 payload.refund_value_naira = null;
-                payload.refund_tax = null;
                 payload.refund_by = null;
                 payload.refund_reason = null;
             }
@@ -1876,7 +1914,7 @@
             if (!ids.length) return alert("Select tickets first.");
             
             const toExport = ticketsList.filter(t => ids.includes(String(t.id)));
-            let csv = "Ticket #,Type,Status,Date,Issue Period From,Issue Period To,Issuer,EMD Reason,Type Reason,Comment,Entered,Staff\n";
+            let csv = "Ticket #,Type,Status,Date,Issue Period From,Issue Period To,Issuer,Previous Ticket #,Ticket Value,Tax,EMD Reason,Type Reason,Comment,Entered,Staff\n";
             
             toExport.forEach(t => {
                 const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -1889,6 +1927,9 @@
                     cell(t.issue_period_from || ''),
                     cell(t.issue_period_to || ''),
                     cell(t.issuer_name),
+                    cell(t.previous_ticket_num || ''),
+                    cell(t.ticket_value_naira ?? ''),
+                    cell(t.refund_tax ?? ''),
                     cell(t.emd_reason || ''),
                     cell(typeReason),
                     cell(t.status_comment || ''),
