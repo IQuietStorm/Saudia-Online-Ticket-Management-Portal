@@ -195,6 +195,17 @@
 
         /* MOBILE RESPONSIVE GRID */
         .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .date-range { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .date-range input { margin-bottom: 0; }
+        #entry-timestamp-display {
+            font-size: 13px;
+            color: var(--muted-text);
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: var(--surface-2);
+            border-radius: var(--radius-1);
+            display: none;
+        }
 
         /* FILTER + SORT BAR */
         .filter-bar {
@@ -420,8 +431,7 @@
                         <option value="Fresh Issue">Fresh Issue</option>
                         <option value="Re-issue">Re-issue</option>
                         <option value="Re-booked">Re-booked</option>
-                        <option value="Upgrade">Upgrade</option>
-                        <option value="Downgrade">Downgrade</option>
+                        <option value="EMD">EMD</option>
                     </select>
                     <label>Ticket Status</label>
                     <select id="ticketStatus" onchange="toggleDynamicFields()">
@@ -431,6 +441,7 @@
                         <option value="U-Class">U-Class</option>
                         <option value="Z-Class">Z-Class</option>
                         <option value="N/A">N/A</option>
+                        <option value="CANX">CANX</option>
                     </select>
                 </div>
                 <div>
@@ -442,7 +453,20 @@
                             <input type="text" id="issuerName">
                             <label>Route</label>
                             <input type="text" id="ticketRoute" placeholder="Enter route details">
-                            <label>Flight Type</label>
+                            <div id="issue-period-box">
+                                <label>Issue Period</label>
+                                <div class="date-range">
+                                    <div>
+                                        <label style="font-size:10px; color:var(--muted-text);">From</label>
+                                        <input type="date" id="issuePeriodFrom">
+                                    </div>
+                                    <div>
+                                        <label style="font-size:10px; color:var(--muted-text);">To</label>
+                                        <input type="date" id="issuePeriodTo">
+                                    </div>
+                                </div>
+                            </div>
+                            <label id="flightTypeLabel">Flight Type</label>
                             <select id="flightType">
                                 <option value="">Select...</option>
                                 <option value="One-way">One-way</option>
@@ -461,6 +485,7 @@
                             <label>Date of Flight</label>
                             <input type="date" id="flightDate">
                         </div>
+                        <div id="entry-timestamp-display"></div>
                         <div id="refund-box" style="display:none;">
                             <label>Refund Status</label>
                             <select id="refundStatus" onchange="toggleDynamicFields()">
@@ -515,6 +540,7 @@
                         <option value="U-Class">U-Class</option>
                         <option value="Z-Class">Z-Class</option>
                         <option value="N/A">N/A</option>
+                        <option value="CANX">CANX</option>
                     </select>
                 </div>
 
@@ -525,8 +551,7 @@
                         <option value="Fresh Issue">Fresh Issue</option>
                         <option value="Re-issue">Re-issue</option>
                         <option value="Re-booked">Re-booked</option>
-                        <option value="Upgrade">Upgrade</option>
-                        <option value="Downgrade">Downgrade</option>
+                        <option value="EMD">EMD</option>
                     </select>
                 </div>
 
@@ -580,6 +605,7 @@
                             <th>Type</th>
                             <th>Status</th>
                             <th>Date</th>
+                            <th>Entered</th>
                             <th>Staff</th>
                         </tr>
                     </thead>
@@ -639,20 +665,81 @@
         }
 
         async function initAuth() {
-            const { data, error } = await saudiaClient.auth.getSession();
-            if (!error && data?.session?.user) {
-                // Prevent silent reuse of a previously stored session from another account.
-                await saudiaClient.auth.signOut();
+            try {
+                const { data: { session }, error } = await saudiaClient.auth.getSession();
+                if (error) throw error;
+
+                if (session?.user) {
+                    activeUser = session.user;
+                    await loadApp();
+                } else {
+                    activeUser = null;
+                    activeProfile = null;
+                    document.getElementById('login-screen').style.display = 'flex';
+                    document.getElementById('main-app').style.display = 'none';
+                }
+            } catch (err) {
+                console.error('Auth initialization failed:', err.message);
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('main-app').style.display = 'none';
             }
-            activeUser = null;
-            activeProfile = null;
-            selectedTicketId = null;
-            document.getElementById('login-screen').style.display = 'flex';
-            document.getElementById('main-app').style.display = 'none';
-            document.getElementById('email').value = '';
-            document.getElementById('password').value = '';
-            if (document.getElementById('signupFullName')) document.getElementById('signupFullName').value = '';
-            setAuthMode('signin');
+        }
+
+        let generalLogoutTimer = null;
+
+        function startInactiveTimers() {
+            // Reserved for future tab-visibility handling; no auto-reload on refresh.
+        }
+
+        function stopInactiveTimers() {}
+
+        function startGeneralInactivityTimer() {
+            if (!activeUser) return;
+            if (generalLogoutTimer) clearTimeout(generalLogoutTimer);
+            generalLogoutTimer = setTimeout(() => logout(), 30 * 60 * 1000);
+        }
+
+        function resetGeneralInactivityTimer() {
+            startGeneralInactivityTimer();
+        }
+
+        function stopGeneralInactivityTimer() {
+            if (generalLogoutTimer) clearTimeout(generalLogoutTimer);
+            generalLogoutTimer = null;
+        }
+
+        document.addEventListener('mousemove', resetGeneralInactivityTimer);
+        document.addEventListener('keydown', resetGeneralInactivityTimer);
+        document.addEventListener('click', resetGeneralInactivityTimer);
+        document.addEventListener('scroll', resetGeneralInactivityTimer);
+        document.addEventListener('touchstart', resetGeneralInactivityTimer);
+
+        function formatDateTime(iso) {
+            if (!iso) return '-';
+            const d = new Date(iso);
+            if (Number.isNaN(d.getTime())) return '-';
+            return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+        }
+
+        function formatIssuePeriod(from, to) {
+            if (!from && !to) return '-';
+            if (from && to) return `${from} – ${to}`;
+            return from || to || '-';
+        }
+
+        function getReasonFromTicket(t) {
+            if (!t) return '';
+            if (t.type === 'EMD') return t.emd_reason;
+            if (t.type === 'Re-issue') return t.reissue_reason;
+            if (t.type === 'Re-booked') return t.rebook_reason;
+            return '';
+        }
+
+        function setFieldWithLabel(el, visible) {
+            if (!el) return;
+            el.style.display = visible ? '' : 'none';
+            const label = el.previousElementSibling;
+            if (label && label.tagName === 'LABEL') label.style.display = visible ? '' : 'none';
         }
 
         async function logout() {
@@ -1026,20 +1113,29 @@
             const type = document.getElementById('ticketType').value;
             const status = document.getElementById('ticketStatus').value;
             const refundStatus = document.getElementById('refundStatus')?.value || "";
-            
-            // Show reason box for types that need it
-            const showReason = (type === "Upgrade" || type === "Downgrade" || type === "Re-issue" || type === "Re-booked");
-            document.getElementById('reason-box').style.display = showReason ? "block" : "none";
-            
-            // Update label based on type
+            const isEMD = type === "EMD";
+            const isCANX = status === "CANX";
+            const minimal = isEMD || isCANX;
+
+            setFieldWithLabel(document.getElementById('flightType'), !minimal);
+            const flightTypeLabel = document.getElementById('flightTypeLabel');
+            if (flightTypeLabel) flightTypeLabel.style.display = minimal ? 'none' : '';
+
+            const issuePeriodBox = document.getElementById('issue-period-box');
+            if (issuePeriodBox) issuePeriodBox.style.display = minimal ? 'none' : 'block';
+
+            const showEmdReason = isEMD && !isCANX;
+            const showTypeReason = !minimal && (type === "Re-issue" || type === "Re-booked");
+            document.getElementById('reason-box').style.display = (showEmdReason || showTypeReason) ? "block" : "none";
+
             const reasonLabel = document.getElementById('reasonLabel');
-            if (type === "Upgrade") reasonLabel.innerText = "Reason for upgrade";
-            else if (type === "Downgrade") reasonLabel.innerText = "Reason for downgrade";
+            if (isEMD) reasonLabel.innerText = "Reason for EMD";
             else if (type === "Re-issue" || type === "Re-booked") reasonLabel.innerText = "Type Reason";
-            
-            document.getElementById('flown-box').style.display = (status === "Flown") ? "block" : "none";
-            document.getElementById('refund-box').style.display = (status === "Refund") ? "block" : "none";
-            document.getElementById('refunded-only-box').style.display = (status === "Refund" && refundStatus === "Approved and paid") ? "block" : "none";
+
+            document.getElementById('flown-box').style.display = (!minimal && status === "Flown") ? "block" : "none";
+            document.getElementById('refund-box').style.display = (!minimal && status === "Refund") ? "block" : "none";
+            document.getElementById('status-comment-box').style.display = (!minimal && status !== "Flown" && status !== "Refund") ? "block" : "none";
+            document.getElementById('refunded-only-box').style.display = (!minimal && status === "Refund" && refundStatus === "Approved and paid") ? "block" : "none";
         }
 
         async function getTickets() {
@@ -1146,7 +1242,7 @@
                 if(t.status === 'Flown') cls = 'row-flown';
                 if(t.status === 'Refund') cls = 'row-refund';
                 row.className = cls;
-                row.innerHTML = `<td><input type="checkbox" class="export-check" data-id="${escapeHtml(t.id)}"></td><td>${escapeHtml(t.ticket_num || '')}</td><td>${escapeHtml(t.type || '')}</td><td>${escapeHtml(t.status || '')}</td><td>${escapeHtml(t.issue_date || '-')}</td><td>${escapeHtml(t.processed_by || '')}</td>`;
+                row.innerHTML = `<td><input type="checkbox" class="export-check" data-id="${escapeHtml(t.id)}"></td><td>${escapeHtml(t.ticket_num || '')}</td><td>${escapeHtml(t.type || '')}</td><td>${escapeHtml(t.status || '')}</td><td>${escapeHtml(t.issue_date || '-')}</td><td>${escapeHtml(formatDateTime(t.created_at))}</td><td>${escapeHtml(t.processed_by || '')}</td>`;
                 row.onclick = (e) => { if(e.target.type !== 'checkbox') selectTicket(t, row); };
                 row.ondblclick = (e) => { if(e.target.type !== 'checkbox') openPDFView(t); };
 
@@ -1179,14 +1275,21 @@
             const flightType = document.getElementById('flightType');
             if (flightType) flightType.value = t.flight_type || "";
             
-            // Logic to pull from the correct column based on type
-            let reason = "";
-            if (t.type === "Upgrade") reason = t.upgrade_reason;
-            else if (t.type === "Downgrade") reason = t.downgrade_reason;
-            else if (t.type === "Re-issue") reason = t.reissue_reason;
-            else if (t.type === "Re-booked") reason = t.rebook_reason;
-            
-            document.getElementById('extraReason').value = reason || "";
+            document.getElementById('extraReason').value = getReasonFromTicket(t) || "";
+            const issuePeriodFrom = document.getElementById('issuePeriodFrom');
+            if (issuePeriodFrom) issuePeriodFrom.value = t.issue_period_from || "";
+            const issuePeriodTo = document.getElementById('issuePeriodTo');
+            if (issuePeriodTo) issuePeriodTo.value = t.issue_period_to || "";
+            const entryTs = document.getElementById('entry-timestamp-display');
+            if (entryTs) {
+                if (t.created_at) {
+                    entryTs.style.display = 'block';
+                    entryTs.textContent = `Entered in system: ${formatDateTime(t.created_at)}`;
+                } else {
+                    entryTs.style.display = 'none';
+                    entryTs.textContent = '';
+                }
+            }
             
             const refundStatus = document.getElementById('refundStatus');
             if (refundStatus) refundStatus.value = t.refund_status || "";
@@ -1221,12 +1324,7 @@
             const previewPane = document.getElementById('previewPane');
             const previewContent = document.getElementById('previewContent');
             
-            // Build reason based on type
-            let reason = "";
-            if (t.type === "Upgrade") reason = t.upgrade_reason;
-            else if (t.type === "Downgrade") reason = t.downgrade_reason;
-            else if (t.type === "Re-issue") reason = t.reissue_reason;
-            else if (t.type === "Re-booked") reason = t.rebook_reason;
+            const reason = getReasonFromTicket(t);
 
             let html = `
                 <div class="preview-field">
@@ -1254,12 +1352,20 @@
                     <div class="preview-field-value">${escapeHtml(t.route || '-')}</div>
                 </div>
                 <div class="preview-field">
+                    <div class="preview-field-label">Issue Period</div>
+                    <div class="preview-field-value">${escapeHtml(formatIssuePeriod(t.issue_period_from, t.issue_period_to))}</div>
+                </div>
+            `;
+            if (t.type !== 'EMD' && t.status !== 'CANX') {
+                html += `
+                <div class="preview-field">
                     <div class="preview-field-label">Flight Type</div>
                     <div class="preview-field-value">${escapeHtml(t.flight_type || '-')}</div>
                 </div>
-            `;
+                `;
+            }
             
-            if (t.status === "Flown" && t.flight_date) {
+            if (t.status === "Flown" && t.flight_date && t.type !== 'EMD' && t.status !== 'CANX') {
                 html += `
                     <div class="preview-field">
                         <div class="preview-field-label">Flight Date</div>
@@ -1271,7 +1377,7 @@
             if (reason) {
                 html += `
                     <div class="preview-field">
-                        <div class="preview-field-label">Reason</div>
+                        <div class="preview-field-label">${t.type === "EMD" ? "Reason for EMD" : "Reason"}</div>
                         <div class="preview-field-value">${escapeHtml(reason)}</div>
                     </div>
                 `;
@@ -1337,6 +1443,10 @@
             
             html += `
                 <div class="preview-field">
+                    <div class="preview-field-label">Entered in System</div>
+                    <div class="preview-field-value">${escapeHtml(formatDateTime(t.created_at))}</div>
+                </div>
+                <div class="preview-field">
                     <div class="preview-field-label">Processed By</div>
                     <div class="preview-field-value">${escapeHtml(t.processed_by || '-')}</div>
                 </div>
@@ -1361,12 +1471,7 @@
             const pdfModal = document.getElementById('pdfModal');
             const pdfContent = document.getElementById('pdfContent');
             
-            // Build reason based on type
-            let reason = "";
-            if (t.type === "Upgrade") reason = t.upgrade_reason;
-            else if (t.type === "Downgrade") reason = t.downgrade_reason;
-            else if (t.type === "Re-issue") reason = t.reissue_reason;
-            else if (t.type === "Re-booked") reason = t.rebook_reason;
+            const reason = getReasonFromTicket(t);
 
             let html = `
                 <div class="ticket-header">
@@ -1402,12 +1507,20 @@
                             <div class="ticket-detail-value">${escapeHtml(t.route || '-')}</div>
                         </div>
                         <div class="ticket-detail-item">
+                            <div class="ticket-detail-label">Issue Period</div>
+                            <div class="ticket-detail-value">${escapeHtml(formatIssuePeriod(t.issue_period_from, t.issue_period_to))}</div>
+                        </div>
+            `;
+            if (t.type !== 'EMD' && t.status !== 'CANX') {
+                html += `
+                        <div class="ticket-detail-item">
                             <div class="ticket-detail-label">Flight Type</div>
                             <div class="ticket-detail-value">${escapeHtml(t.flight_type || '-')}</div>
                         </div>
-            `;
+                `;
+            }
             
-            if (t.status === "Flown" && t.flight_date) {
+            if (t.status === "Flown" && t.flight_date && t.type !== 'EMD' && t.status !== 'CANX') {
                 html += `
                         <div class="ticket-detail-item">
                             <div class="ticket-detail-label">Flight Date</div>
@@ -1419,7 +1532,7 @@
             if (reason) {
                 html += `
                         <div class="ticket-detail-item">
-                            <div class="ticket-detail-label">Reason</div>
+                            <div class="ticket-detail-label">${t.type === "EMD" ? "Reason for EMD" : "Reason"}</div>
                             <div class="ticket-detail-value">${escapeHtml(reason)}</div>
                         </div>
                 `;
@@ -1490,6 +1603,10 @@
             
             html += `
                         <div class="ticket-detail-item">
+                            <div class="ticket-detail-label">Entered in System</div>
+                            <div class="ticket-detail-value">${escapeHtml(formatDateTime(t.created_at))}</div>
+                        </div>
+                        <div class="ticket-detail-item">
                             <div class="ticket-detail-label">Processed By</div>
                             <div class="ticket-detail-value">${escapeHtml(t.processed_by || '-')}</div>
                         </div>
@@ -1527,14 +1644,30 @@
                 route: document.getElementById('ticketRoute')?.value || null,
                 flight_type: document.getElementById('flightType')?.value || null,
                 
-                // Logic to route the reason to the specific column
+                issue_period_from: document.getElementById('issuePeriodFrom')?.value || null,
+                issue_period_to: document.getElementById('issuePeriodTo')?.value || null,
                 reissue_reason: (type === "Re-issue") ? reasonValue : null,
                 rebook_reason: (type === "Re-booked") ? reasonValue : null,
-                upgrade_reason: (type === "Upgrade") ? reasonValue : null,
-                downgrade_reason: (type === "Downgrade") ? reasonValue : null
+                emd_reason: (type === "EMD") ? reasonValue : null,
+                upgrade_reason: null,
+                downgrade_reason: null
             };
 
-            // Add refund fields only when relevant
+            const minimal = type === "EMD" || payload.status === "CANX";
+            if (minimal) {
+                payload.flight_date = null;
+                payload.flight_type = null;
+                payload.issue_period_from = null;
+                payload.issue_period_to = null;
+                payload.status_comment = null;
+                if (payload.status === "CANX") {
+                    payload.emd_reason = null;
+                    payload.reissue_reason = null;
+                    payload.rebook_reason = null;
+                }
+            }
+
+            // Add refund fields only when relevant (not for EMD / CANX minimal tickets)
             if (payload.status === "Refund") {
                 payload.refund_status = document.getElementById('refundStatus')?.value || null;
                 payload.ticket_value_naira = parseFloat(document.getElementById('ticketValueNaira')?.value) || null;
@@ -1589,6 +1722,10 @@
                 if (document.getElementById('refundAmountNaira')) document.getElementById('refundAmountNaira').value = '';
                 if (document.getElementById('refundBy')) document.getElementById('refundBy').value = '';
                 if (document.getElementById('refundReason')) document.getElementById('refundReason').value = '';
+                if (document.getElementById('issuePeriodFrom')) document.getElementById('issuePeriodFrom').value = '';
+                if (document.getElementById('issuePeriodTo')) document.getElementById('issuePeriodTo').value = '';
+                const entryTsReset = document.getElementById('entry-timestamp-display');
+                if (entryTsReset) { entryTsReset.style.display = 'none'; entryTsReset.textContent = ''; }
                 toggleDynamicFields();
                 getTickets();
             }
@@ -1651,12 +1788,28 @@
                 route: document.getElementById('ticketRoute')?.value || null,
                 flight_type: document.getElementById('flightType')?.value || null,
                 
-                // Logic to route the reason to the specific column
+                issue_period_from: document.getElementById('issuePeriodFrom')?.value || null,
+                issue_period_to: document.getElementById('issuePeriodTo')?.value || null,
                 reissue_reason: (type === "Re-issue") ? reasonValue : null,
                 rebook_reason: (type === "Re-booked") ? reasonValue : null,
-                upgrade_reason: (type === "Upgrade") ? reasonValue : null,
-                downgrade_reason: (type === "Downgrade") ? reasonValue : null
+                emd_reason: (type === "EMD") ? reasonValue : null,
+                upgrade_reason: null,
+                downgrade_reason: null
             };
+
+            const minimal = type === "EMD" || payload.status === "CANX";
+            if (minimal) {
+                payload.flight_date = null;
+                payload.flight_type = null;
+                payload.issue_period_from = null;
+                payload.issue_period_to = null;
+                payload.status_comment = null;
+                if (payload.status === "CANX") {
+                    payload.emd_reason = null;
+                    payload.reissue_reason = null;
+                    payload.rebook_reason = null;
+                }
+            }
 
             if (payload.status === "Refund") {
                 payload.refund_status = document.getElementById('refundStatus')?.value || null;
@@ -1730,20 +1883,23 @@
             if (!ids.length) return alert("Select tickets first.");
             
             const toExport = ticketsList.filter(t => ids.includes(String(t.id)));
-            // Added Upgrade and Downgrade columns to headers
-            let csv = "Ticket #,Type,Status,Date,Issuer,Upgrade Reason,Downgrade Reason,Comment,Staff\n";
+            let csv = "Ticket #,Type,Status,Date,Issue Period From,Issue Period To,Issuer,EMD Reason,Type Reason,Comment,Entered,Staff\n";
             
             toExport.forEach(t => {
                 const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+                const typeReason = getReasonFromTicket(t);
                 csv += [
                     cell(t.ticket_num),
                     cell(t.type),
                     cell(t.status),
                     cell(t.issue_date),
+                    cell(t.issue_period_from || ''),
+                    cell(t.issue_period_to || ''),
                     cell(t.issuer_name),
-                    cell(t.upgrade_reason || ''),
-                    cell(t.downgrade_reason || ''),
+                    cell(t.emd_reason || ''),
+                    cell(typeReason),
                     cell(t.status_comment || ''),
+                    cell(formatDateTime(t.created_at)),
                     cell(t.processed_by)
                 ].join(",") + "\n";
             });
@@ -1758,35 +1914,8 @@
 
         applyUiPrefs();
         setAuthMode('signin');
+        toggleDynamicFields();
         initAuth();
-
-        async function initAuth() {
-    try {
-        // 1. Get the current session from Supabase local storage
-        const { data: { session }, error } = await saudiaClient.auth.getSession();
-
-        if (error) throw error;
-
-        if (session && session.user) {
-            // 2. User is already logged in, set them as active
-            activeUser = session.user;
-            
-            // 3. Load the application data immediately
-            await loadApp(); 
-            
-            console.log("Session restored successfully.");
-        } else {
-            // 4. No session found, stay on the login screen
-            document.getElementById('login-screen').style.display = 'flex';
-            document.getElementById('main-app').style.display = 'none';
-        }
-    } catch (err) {
-        console.error("Auth initialization failed:", err.message);
-        // Fallback to login screen if something goes wrong
-        document.getElementById('login-screen').style.display = 'flex';
-    }
-}
-
-            </script>
+    </script>
 </body>
 </html>
