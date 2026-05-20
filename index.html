@@ -52,16 +52,16 @@
             transition: background-color 0.25s ease, color 0.25s ease;
         }
         
-        #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
         .login-box { 
             background: var(--card-bg); 
-            padding: 38px; 
-            border-radius: var(--radius-2); 
-            box-shadow: var(--shadow-2); 
+            padding: 22px 24px; 
+            border-radius: var(--radius-1); 
+            box-shadow: var(--shadow-1); 
             text-align: center; 
             width: 100%; 
-            max-width: 420px; 
-            border-top: 6px solid var(--islamic-green);
+            max-width: 340px; 
+            border-top: 4px solid var(--islamic-green);
         }
         .login-brand {
             display: flex;
@@ -82,85 +82,90 @@
         #main-app { 
             display: none; 
             width: 100%; 
-            max-width: 1200px; 
+            max-width: 1100px; 
             background: var(--card-bg); 
             min-height: 90vh; 
-            border-radius: var(--radius-2); 
+            border-radius: var(--radius-1); 
             box-shadow: var(--shadow-1); 
             overflow: hidden; 
-            margin: 20px auto;
+            margin: 12px auto;
         }
         
         /* HEADER STYLING */
         header { 
             background-color: var(--card-bg); 
-            padding: 10px 25px; 
-            border-top: 6px solid var(--islamic-green);
-            border-bottom: 4px solid var(--saudia-gold); 
+            padding: 8px 14px; 
+            border-top: 4px solid var(--islamic-green);
+            border-bottom: 3px solid var(--saudia-gold); 
             display: flex; 
             align-items: center; 
             position: relative; 
-            min-height: 90px;
+            min-height: 56px;
             flex-wrap: wrap;
+            gap: 8px;
         }
         
-        .logo-box { width: 80px; height: 60px; display: flex; align-items: center; justify-content: center; margin-right: 18px; }
+        .logo-box { width: 52px; height: 44px; display: flex; align-items: center; justify-content: center; margin-right: 10px; }
         .header-logo { max-height: 100%; max-width: 100%; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.10)); }
 
         .header-title {
             flex-grow: 1;
             color: var(--islamic-green);
-            letter-spacing: 2px;
-            font-size: 1.8em;
+            letter-spacing: 1px;
+            font-size: 1.15em;
             font-weight: bold;
             text-transform: uppercase;
             text-align: center;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
         }
         .title-logo {
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
             background: var(--surface-2);
-            padding: 5px;
+            padding: 4px;
             object-fit: contain;
         }
         
-        .header-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-        .user-info { font-family: ui-sans-serif, Arial, sans-serif; font-size: 0.85em; color: var(--text-main); }
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+        }
         
         /* HEADER TOGGLES */
-        .toggle-row { display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+        .toggle-row { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
         .mini-btn { 
             background: var(--saudia-gold); 
-            font-size: 10px; 
-            padding: 7px 10px; 
+            font-size: 9px; 
+            padding: 5px 8px; 
             border-radius: 999px; 
-            letter-spacing: 0.4px;
+            letter-spacing: 0.3px;
         }
         .mini-btn.alt { background: var(--islamic-green); }
 
         /* UI ELEMENTS */
-        .container { padding: 22px; font-family: ui-sans-serif, Arial, sans-serif; }
+        .container { padding: 14px 16px; font-family: ui-sans-serif, Arial, sans-serif; }
         input, select { 
             width: 100%; 
-            padding: 12px; 
+            padding: 8px 10px; 
             border: 1px solid var(--input-border); 
-            margin-bottom: 10px; 
-            border-radius: var(--radius-1); 
+            margin-bottom: 6px; 
+            border-radius: 8px; 
             background: var(--card-bg); 
             color: var(--text-main); 
-            font-size: 16px; 
-            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
+            font-size: 13px; 
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
         input:focus, select:focus { outline: none; border-color: var(--islamic-green); box-shadow: var(--focus-ring); }
-        .dynamic-section { background: var(--surface-2); padding: 16px; border-left: 4px solid var(--saudia-gold); margin-bottom: 15px; border-radius: var(--radius-1); }
-        .btn-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .dynamic-section { background: var(--surface-2); padding: 10px 12px; border-left: 3px solid var(--saudia-gold); margin-bottom: 10px; border-radius: 8px; }
+        .btn-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
         button { 
-            padding: 12px 20px; 
+            padding: 8px 14px; 
             border: none; 
             cursor: pointer; 
             font-weight: bold; 
@@ -168,8 +173,9 @@
             color: white; 
             border-radius: 999px; 
             background: var(--islamic-green); 
+            font-size: 11px;
             transition: transform 0.12s ease, filter 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-            box-shadow: 0 10px 18px rgba(0,0,0,0.10);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
         }
         button:hover { filter: brightness(1.05); transform: translateY(-1px); }
         button:active { transform: translateY(0px) scale(0.99); }
@@ -180,8 +186,8 @@
         /* TABLE STYLING */
         .table-wrap { overflow-x: auto; margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 600px; }
-        th { background: var(--surface-3); color: var(--islamic-green); text-align: left; padding: 12px; border-bottom: 2px solid var(--saudia-gold); position: sticky; top: 0; backdrop-filter: blur(8px); }
-        td { padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.10); }
+        th { background: var(--surface-3); color: var(--islamic-green); text-align: left; padding: 8px 10px; font-size: 11px; border-bottom: 2px solid var(--saudia-gold); position: sticky; top: 0; backdrop-filter: blur(8px); }
+        td { padding: 7px 10px; font-size: 12px; border-bottom: 1px solid rgba(0,0,0,0.10); }
         tbody tr { transition: transform 0.12s ease, filter 0.2s ease, box-shadow 0.2s ease; cursor: pointer; }
         tbody tr:hover { filter: brightness(1.01); }
         tbody tr.is-selected { outline: 2px solid rgba(142, 113, 62, 0.55); outline-offset: -2px; }
@@ -194,7 +200,101 @@
         #auth-toggle:hover { color: var(--text-main); }
 
         /* MOBILE RESPONSIVE GRID */
-        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .remember-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0 10px;
+            text-align: left;
+            font-size: 12px;
+            color: var(--text-main);
+            font-family: ui-sans-serif, Arial, sans-serif;
+            cursor: pointer;
+        }
+        .remember-row input { width: auto; margin: 0; }
+
+        .account-menu { position: relative; }
+        .account-avatar-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--saudia-gold);
+            background: var(--islamic-green);
+            color: #fff;
+            font-weight: bold;
+            font-size: 13px;
+            font-family: ui-sans-serif, Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            text-transform: none;
+        }
+        .account-avatar-btn:hover { filter: brightness(1.08); }
+        .account-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            min-width: 200px;
+            background: var(--card-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            box-shadow: var(--shadow-2);
+            z-index: 200;
+            overflow: hidden;
+        }
+        .account-dropdown.open { display: block; }
+        .account-dropdown-profile {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--surface-3);
+            background: var(--surface-2);
+        }
+        .account-profile-heading {
+            font-size: 10px;
+            color: var(--muted-text);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+        .account-dropdown-profile strong {
+            display: block;
+            font-size: 13px;
+            color: var(--text-main);
+            margin-bottom: 2px;
+            word-break: break-word;
+        }
+        .account-dropdown-profile span {
+            font-size: 11px;
+            color: var(--saudia-gold);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .account-dropdown-item {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 0;
+            background: var(--card-bg);
+            color: var(--text-main);
+            font-size: 12px;
+            text-transform: none;
+            font-weight: 600;
+            box-shadow: none;
+        }
+        .account-dropdown-item:hover {
+            background: var(--surface-2);
+            transform: none;
+        }
+        #account-mgmt-item { color: var(--islamic-green); }
+        .account-dropdown-item.logout-item { color: #b22222; border-top: 1px solid var(--surface-3); }
         .date-range { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .date-range input { margin-bottom: 0; }
         #entry-timestamp-display {
@@ -209,9 +309,9 @@
 
         /* FILTER + SORT BAR */
         .filter-bar {
-            margin-top: 18px;
-            padding: 14px;
-            border-radius: var(--radius-2);
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: var(--radius-1);
             background: var(--surface-2);
             border: 1px solid rgba(0,0,0,0.06);
             display: grid;
@@ -457,6 +557,10 @@
 
             <input type="email" id="email" placeholder="Email address" autocomplete="email">
             <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+            <label class="remember-row">
+                <input type="checkbox" id="rememberMe" checked>
+                <span data-i18n="auth.rememberMe">Remember Me</span>
+            </label>
             <button onclick="handleAuth()" id="main-auth-btn" style="width:100%">Sign In</button>
             <br><button onclick="handleForgotPassword()" style="background:#666; width:100%; margin-top:10px;">Forgotten Password?</button>
             <br><br><span id="auth-hint" style="font-size:12px; color:var(--muted-text);">Sign in to access your tickets.</span>
@@ -479,15 +583,27 @@
                         <option value="ar">AR</option>
                     </select>
                     <button id="theme-toggle" class="mini-btn" onclick="toggleTheme()" data-i18n="ui.nightMode">Night Mode</button>
-                    <button id="layout-toggle" class="mini-btn alt" onclick="toggleLayout()">Mobile View</button>
-                    <button id="admin-dash-btn" class="mini-btn" style="display:none; background:#c41e3a;" onclick="toggleAdminDashboard()">Management</button>
+                    <button id="layout-toggle" class="mini-btn alt" onclick="toggleLayout()" data-i18n="ui.mobileView">Mobile View</button>
                 </div>
-                <div class="user-info"><span id="display-name"></span> | <span id="logout-link" style="cursor:pointer; font-weight:bold;" onclick="logout()" data-i18n="auth.logout">Logout</span></div>
+                <div class="account-menu" id="account-menu">
+                    <button type="button" class="account-avatar-btn" id="account-avatar-btn" onclick="toggleAccountMenu(event)" aria-haspopup="true" aria-expanded="false">
+                        <span id="account-initials">?</span>
+                    </button>
+                    <div class="account-dropdown" id="account-dropdown">
+                        <div class="account-dropdown-profile">
+                            <div class="account-profile-heading" data-i18n="account.profile">Profile</div>
+                            <strong id="account-profile-name">—</strong>
+                            <span id="account-profile-role">USER</span>
+                        </div>
+                        <button type="button" class="account-dropdown-item" id="account-mgmt-item" style="display:none;" onclick="closeAccountMenu(); toggleAdminDashboard();" data-i18n="admin.management">Management</button>
+                        <button type="button" class="account-dropdown-item logout-item" onclick="closeAccountMenu(); logout();" data-i18n="auth.logout">Logout</button>
+                    </div>
+                </div>
             </div>
         </header>
 
-        <div id="admin-dashboard" style="display:none; padding: 20px;">
-            <h2 style="color: var(--islamic-green); text-align: center; margin-bottom: 30px;">User Management Dashboard</h2>
+        <div id="admin-dashboard" style="display:none; padding: 14px 16px;">
+            <h2 style="color: var(--islamic-green); text-align: center; margin-bottom: 16px; font-size: 1.1em;">User Management Dashboard</h2>
 
             <div class="mfa-admin-section">
                 <h3 data-i18n="mfa.title">Authenticator MFA</h3>
@@ -780,7 +896,23 @@
     <script>
         const SAUDIA_URL = 'https://ztlqvltjxzxpkccaelbp.supabase.co';
         const SAUDIA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0bHF2bHRqeHp4cGtjY2FlbGJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMzY3NTksImV4cCI6MjA5MzgxMjc1OX0.SuAx1MLFOvl4QXqVMDnCigrgpYbidN20ClCQYbU8Yxo';
-        const saudiaClient = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY);
+
+        function getRememberMeEnabled() {
+            return localStorage.getItem('tms_remember_me') !== '0';
+        }
+
+        function getAuthStorage() {
+            return getRememberMeEnabled() ? window.localStorage : window.sessionStorage;
+        }
+
+        const saudiaClient = window.supabase.createClient(SAUDIA_URL, SAUDIA_KEY, {
+            auth: {
+                storage: getAuthStorage(),
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true
+            }
+        });
 
         let activeUser, activeProfile, ticketsList = [], selectedTicketId = null;
         let visibleTickets = [];
@@ -804,6 +936,9 @@
                 'auth.hintSignIn': 'Sign in to access your tickets.',
                 'auth.hintSignup': 'New accounts are created as User by default. Admin can later upgrade roles.',
                 'auth.logout': 'Logout',
+                'auth.rememberMe': 'Remember Me',
+                'auth.rememberReload': 'Applying sign-in preference. Please sign in again.',
+                'account.profile': 'Profile',
                 'ui.nightMode': 'Night Mode',
                 'ui.lightMode': 'Light Mode',
                 'ui.mobileView': 'Mobile View',
@@ -899,6 +1034,9 @@
                 'auth.hintSignIn': 'سجّل الدخول للوصول إلى التذاكر.',
                 'auth.hintSignup': 'يتم إنشاء الحسابات الجديدة كمستخدم افتراضياً. يمكن للمسؤول ترقية الصلاحيات لاحقاً.',
                 'auth.logout': 'تسجيل الخروج',
+                'auth.rememberMe': 'تذكرني',
+                'auth.rememberReload': 'جاري تطبيق تفضيل تسجيل الدخول. يرجى تسجيل الدخول مرة أخرى.',
+                'account.profile': 'الملف الشخصي',
                 'ui.nightMode': 'الوضع الليلي',
                 'ui.lightMode': 'الوضع النهاري',
                 'ui.mobileView': 'عرض الجوال',
@@ -1178,6 +1316,53 @@
             return (activeProfile?.role || 'user').toUpperCase();
         }
 
+        function getAccountInitials(name, email) {
+            const n = (name || '').trim();
+            if (n) {
+                const parts = n.split(/\s+/).filter(Boolean);
+                if (parts.length >= 2) {
+                    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+                }
+                return n.slice(0, 2).toUpperCase();
+            }
+            const e = (email || '').trim();
+            return e ? e.slice(0, 2).toUpperCase() : '?';
+        }
+
+        function updateAccountMenu() {
+            if (!activeProfile || !activeUser) return;
+            const name = activeProfile.full_name || activeUser.email || '—';
+            const initialsEl = document.getElementById('account-initials');
+            const nameEl = document.getElementById('account-profile-name');
+            const roleEl = document.getElementById('account-profile-role');
+            const mgmtEl = document.getElementById('account-mgmt-item');
+            if (initialsEl) initialsEl.textContent = getAccountInitials(name, activeUser.email);
+            if (nameEl) nameEl.textContent = name;
+            if (roleEl) roleEl.textContent = getRoleDisplayLabel();
+            if (mgmtEl) mgmtEl.style.display = canManageUsers() ? 'block' : 'none';
+        }
+
+        function closeAccountMenu() {
+            const dropdown = document.getElementById('account-dropdown');
+            const btn = document.getElementById('account-avatar-btn');
+            if (dropdown) dropdown.classList.remove('open');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+
+        function toggleAccountMenu(event) {
+            if (event) event.stopPropagation();
+            const dropdown = document.getElementById('account-dropdown');
+            const btn = document.getElementById('account-avatar-btn');
+            if (!dropdown) return;
+            const open = dropdown.classList.toggle('open');
+            if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('account-menu');
+            if (menu && !menu.contains(e.target)) closeAccountMenu();
+        });
+
         function refreshAppPermissions() {
             if (!activeProfile || !activeUser) return;
             const canEdit = canEditTickets();
@@ -1185,12 +1370,17 @@
             const delBtn = document.getElementById('admin-del');
             if (updBtn) updBtn.style.display = canEdit ? 'inline-block' : 'none';
             if (delBtn) delBtn.style.display = canEdit ? 'inline-block' : 'none';
-            const adminDashBtn = document.getElementById('admin-dash-btn');
-            if (adminDashBtn) adminDashBtn.style.display = canManageUsers() ? 'inline-block' : 'none';
-            const displayName = document.getElementById('display-name');
-            if (displayName) {
-                displayName.innerText = `${activeProfile.full_name || activeUser.email} (${getRoleDisplayLabel()})`;
-            }
+            updateAccountMenu();
+        }
+
+        function applyRememberMePreferenceFromCheckbox() {
+            const want = document.getElementById('rememberMe')?.checked ?? true;
+            localStorage.setItem('tms_remember_me', want ? '1' : '0');
+        }
+
+        function syncRememberMeCheckbox() {
+            const cb = document.getElementById('rememberMe');
+            if (cb) cb.checked = getRememberMeEnabled();
         }
 
         function canManageUsers() {
@@ -1302,6 +1492,7 @@
         async function logout() {
             stopInactiveTimers();
             stopGeneralInactivityTimer();
+            closeAccountMenu();
             await saudiaClient.auth.signOut();
             activeUser = null;
             activeProfile = null;
@@ -1382,6 +1573,7 @@
 
         function toggleAdminDashboard() {
             if (!canManageUsers()) return alert("Admin only.");
+            closeAccountMenu();
             const adminDash = document.getElementById('admin-dashboard');
             const ticketsCont = document.getElementById('tickets-container');
             
@@ -1823,6 +2015,16 @@
                 alert("Account created. If email confirmation is enabled, please check your email to confirm before signing in.");
                 setAuthMode('signin');
                 document.getElementById('password').value = '';
+                return;
+            }
+
+            const rememberCb = document.getElementById('rememberMe');
+            const wantRemember = rememberCb ? rememberCb.checked : true;
+            const hadRemember = getRememberMeEnabled();
+            localStorage.setItem('tms_remember_me', wantRemember ? '1' : '0');
+            if (wantRemember !== hadRemember) {
+                alert(t('auth.rememberReload'));
+                location.reload();
                 return;
             }
 
@@ -2707,6 +2909,7 @@
         }
 
         applyUiPrefs();
+        syncRememberMeCheckbox();
         setLanguage(localStorage.getItem('tms_lang') || 'en');
         setAuthMode('signin');
         toggleDynamicFields();
