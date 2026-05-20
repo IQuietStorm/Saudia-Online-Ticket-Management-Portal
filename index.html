@@ -215,6 +215,18 @@
         }
         .remember-row input { width: auto; margin: 0; }
 
+        .export-select-all-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-family: ui-sans-serif, Arial, sans-serif;
+            color: var(--text-main);
+            cursor: pointer;
+            margin-right: 4px;
+        }
+        .export-select-all-row input { width: auto; margin: 0; cursor: pointer; }
+
         .account-menu { position: relative; }
         .account-avatar-btn {
             width: 40px;
@@ -803,7 +815,11 @@
                 <button id="save-ticket-btn" onclick="saveTicket()" data-i18n="btn.saveTicket">Save Ticket</button>
                 <button id="admin-upd" data-i18n="btn.update" class="btn-update" onclick="updateTicket()">Update</button>
                 <button id="admin-del" data-i18n="btn.delete" class="btn-delete" onclick="deleteTicket()">Delete</button>
-                <button style="background:#2e7d32" onclick="exportSelectedToCSV()" data-i18n="btn.exportCsv">Export CSV</button>
+                <label class="export-select-all-row">
+                    <input type="checkbox" id="selectAllSavedExport" onchange="onSelectAllSavedExportChange()">
+                    <span id="selectAllSavedExportLabel">Select all saved tickets for export</span>
+                </label>
+                <button id="export-csv-btn" style="background:#2e7d32" onclick="exportSelectedToCSV()" data-i18n="btn.exportCsv">Export CSV</button>
             </div>
             
             <div class="filter-bar">
@@ -1027,6 +1043,11 @@
                 'btn.update': 'Update',
                 'btn.delete': 'Delete',
                 'btn.exportCsv': 'Export CSV',
+                'export.selectAllSaved': 'Select all saved tickets for export ({count})',
+                'export.confirmAll': 'Export all {count} saved tickets to CSV? This may take a moment.',
+                'export.noneSaved': 'No saved tickets to export.',
+                'export.failed': 'Export failed: {message}',
+                'export.selectFirst': 'Select tickets first, or check "Select all saved tickets for export".',
                 'filter.search': 'Search',
                 'filter.searchPh': 'Search ticket numbers...',
                 'filter.status': 'Status',
@@ -1131,6 +1152,11 @@
                 'btn.update': 'تحديث',
                 'btn.delete': 'حذف',
                 'btn.exportCsv': 'تصدير CSV',
+                'export.selectAllSaved': 'تحديد كل التذاكر المحفوظة للتصدير ({count})',
+                'export.confirmAll': 'تصدير كل التذاكر المحفوظة ({count}) إلى CSV؟ قد يستغرق ذلك بعض الوقت.',
+                'export.noneSaved': 'لا توجد تذاكر محفوظة للتصدير.',
+                'export.failed': 'فشل التصدير: {message}',
+                'export.selectFirst': 'حدد التذاكر أولاً، أو فعّل "تحديد كل التذاكر المحفوظة للتصدير".',
                 'filter.search': 'بحث',
                 'filter.searchPh': 'ابحث برقم التذكرة...',
                 'filter.status': 'الحالة',
@@ -1196,6 +1222,7 @@
             applyUiPrefs();
             updateResultMeta();
             updateTicketPagination();
+            updateSelectAllSavedExportLabel();
         }
 
         function applyI18n() {
@@ -2180,6 +2207,34 @@
                 .from('tickets')
                 .select('*', { count: 'exact', head: true });
             if (!error) ticketSavedCount = count ?? 0;
+            updateSelectAllSavedExportLabel();
+        }
+
+        function updateSelectAllSavedExportLabel() {
+            const label = document.getElementById('selectAllSavedExportLabel');
+            if (label) label.textContent = t('export.selectAllSaved', { count: ticketSavedCount });
+        }
+
+        function clearSelectAllSavedExport() {
+            const savedCb = document.getElementById('selectAllSavedExport');
+            if (savedCb) savedCb.checked = false;
+        }
+
+        function onSelectAllSavedExportChange() {
+            const savedCb = document.getElementById('selectAllSavedExport');
+            const pageMaster = document.getElementById('selectAll');
+            if (!savedCb) return;
+            if (savedCb.checked) {
+                if (!ticketSavedCount) {
+                    savedCb.checked = false;
+                    return alert(t('export.noneSaved'));
+                }
+                document.querySelectorAll('.export-check').forEach(cb => { cb.checked = true; });
+                if (pageMaster) pageMaster.checked = true;
+            } else {
+                document.querySelectorAll('.export-check').forEach(cb => { cb.checked = false; });
+                if (pageMaster) pageMaster.checked = false;
+            }
         }
 
         async function fetchTicketsPage() {
@@ -2360,6 +2415,7 @@
                 const checkbox = row.querySelector('.export-check');
                 if (checkbox) {
                     checkbox.addEventListener('change', (e) => {
+                        if (!e.target.checked) clearSelectAllSavedExport();
                         if (e.target.checked) {
                             selectTicket(t, row);
                         } else if (selectedTicketId === t.id) {
@@ -2371,6 +2427,12 @@
 
                 if (selectedTicketId && t.id === selectedTicketId) row.classList.add('is-selected');
             });
+
+            if (document.getElementById('selectAllSavedExport')?.checked) {
+                document.querySelectorAll('.export-check').forEach(cb => { cb.checked = true; });
+                const pageMaster = document.getElementById('selectAll');
+                if (pageMaster) pageMaster.checked = true;
+            }
         }
 
         // Function to retrieve data back into the form when a row is clicked
@@ -3031,25 +3093,22 @@
         }
 
         function toggleAllCheckboxes() {
+            clearSelectAllSavedExport();
             const master = document.getElementById('selectAll').checked;
             document.querySelectorAll('.export-check').forEach(cb => cb.checked = master);
         }
 
-        function filterTable() {
-            applyFiltersAndSort();
+        async function fetchAllSavedTicketsForExport() {
+            return fetchAllPaginated(() =>
+                saudiaClient.from('tickets').select('*').order('created_at', { ascending: false })
+            );
         }
 
-        async function exportSelectedToCSV() {
-            const ids = Array.from(document.querySelectorAll('.export-check:checked')).map(cb => cb.getAttribute('data-id'));
-            if (!ids.length) return alert("Select tickets first.");
-
-            const { data, error } = await saudiaClient.from('tickets').select('*').in('id', ids);
-            if (error) return alert('Export failed: ' + error.message);
-            const toExport = data || [];
+        function buildTicketsCsv(tickets) {
             let csv = "Ticket #,Type,Status,Date,Issue Period From,Issue Period To,Issuer,Previous Ticket #,Ticket Value,Tax,EMD Reason,Type Reason,Comment,Entered,Staff\n";
-            
-            toExport.forEach(t => {
-                const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+            const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+
+            (tickets || []).forEach(t => {
                 const typeReason = getReasonFromTicket(t);
                 csv += [
                     cell(t.ticket_num),
@@ -3069,13 +3128,60 @@
                     cell(t.processed_by)
                 ].join(",") + "\n";
             });
-            
+            return csv;
+        }
+
+        function downloadTicketsCsv(csv, suffix) {
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Saudi_Airline_Detailed_Report_${new Date().toLocaleDateString()}.csv`;
+            a.download = `Saudi_Airline_Detailed_Report_${suffix}_${new Date().toLocaleDateString()}.csv`;
             a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function filterTable() {
+            applyFiltersAndSort();
+        }
+
+        async function exportSelectedToCSV() {
+            const exportAllSaved = document.getElementById('selectAllSavedExport')?.checked;
+            const exportBtn = document.getElementById('export-csv-btn');
+            let toExport = [];
+
+            if (exportAllSaved) {
+                const count = ticketSavedCount;
+                if (!count) return alert(t('export.noneSaved'));
+                if (!confirm(t('export.confirmAll', { count }))) return;
+
+                const prevText = exportBtn?.textContent;
+                if (exportBtn) {
+                    exportBtn.disabled = true;
+                    exportBtn.textContent = t('btn.exportCsv') + '…';
+                }
+                try {
+                    toExport = await fetchAllSavedTicketsForExport();
+                } catch (err) {
+                    alert(t('export.failed', { message: err.message || String(err) }));
+                    return;
+                } finally {
+                    if (exportBtn) {
+                        exportBtn.disabled = false;
+                        exportBtn.textContent = prevText || t('btn.exportCsv');
+                    }
+                }
+                downloadTicketsCsv(buildTicketsCsv(toExport), 'All_Saved');
+                return;
+            }
+
+            const ids = Array.from(document.querySelectorAll('.export-check:checked')).map(cb => cb.getAttribute('data-id'));
+            if (!ids.length) return alert(t('export.selectFirst'));
+
+            const { data, error } = await saudiaClient.from('tickets').select('*').in('id', ids);
+            if (error) return alert(t('export.failed', { message: error.message }));
+            toExport = data || [];
+            downloadTicketsCsv(buildTicketsCsv(toExport), 'Selected');
         }
 
         applyUiPrefs();
