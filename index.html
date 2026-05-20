@@ -399,6 +399,31 @@
         #mfa-setup-block { margin-top: 12px; }
         .mfa-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
         .mfa-actions button { flex: 1; min-width: 140px; }
+
+        .temp-supervisor-cell { min-width: 220px; }
+        .temp-supervisor-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: stretch;
+        }
+        .temp-supervisor-controls select {
+            margin-bottom: 0;
+            padding: 6px 8px;
+            font-size: 12px;
+        }
+        .temp-supervisor-controls button {
+            padding: 6px 10px;
+            font-size: 11px;
+            width: 100%;
+        }
+        .temp-supervisor-status {
+            font-size: 11px;
+            color: var(--islamic-green);
+            font-weight: 600;
+            line-height: 1.35;
+        }
+        .temp-supervisor-status.expired { color: var(--muted-text); font-weight: normal; }
     </style>
         <link rel="manifest" href="manifest.json">
         <meta name="theme-color" content="#009000">
@@ -512,6 +537,7 @@
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Role</th>
+                                <th data-i18n="tempSup.column">Temp Supervisor</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
@@ -797,6 +823,25 @@
                 'mfa.success': 'MFA successfully enabled for your account!',
                 'mfa.codeRequired': 'Enter the 6-digit code from your authenticator app.',
                 'mfa.noPending': 'No pending MFA setup. Click Enable MFA first.',
+                'tempSup.column': 'Temp Supervisor',
+                'tempSup.grant': 'Grant temp supervisor',
+                'tempSup.revoke': 'Revoke',
+                'tempSup.badge': 'TEMP SUPERVISOR',
+                'tempSup.30m': '30 mins',
+                'tempSup.1h': '1 hr',
+                'tempSup.3h': '3 hrs',
+                'tempSup.5h': '5 hrs',
+                'tempSup.24h': '24 hrs',
+                'tempSup.7d': '7 days',
+                'tempSup.14d': '14 days',
+                'tempSup.30d': '30 days',
+                'tempSup.activeUntil': 'Active until {date}',
+                'tempSup.expired': 'No active temp access',
+                'tempSup.usersOnly': 'Only accounts with the User role can receive temporary supervisor access.',
+                'tempSup.invalidDuration': 'Please select a valid duration.',
+                'tempSup.granted': 'Temporary supervisor access granted until {date}.',
+                'tempSup.revoked': 'Temporary supervisor access revoked.',
+                'tempSup.revokeConfirm': 'Revoke temporary supervisor access for this user?',
                 'ticket.number': 'Ticket Number',
                 'ticket.type': 'Ticket Type',
                 'ticket.status': 'Ticket Status',
@@ -873,6 +918,25 @@
                 'mfa.success': 'تم تفعيل MFA بنجاح لحسابك!',
                 'mfa.codeRequired': 'أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة.',
                 'mfa.noPending': 'لا يوجد إعداد MFA معلّق. انقر تفعيل MFA أولاً.',
+                'tempSup.column': 'مشرف مؤقت',
+                'tempSup.grant': 'منح صلاحية مشرف مؤقتة',
+                'tempSup.revoke': 'إلغاء',
+                'tempSup.badge': 'مشرف مؤقت',
+                'tempSup.30m': '30 دقيقة',
+                'tempSup.1h': 'ساعة واحدة',
+                'tempSup.3h': '3 ساعات',
+                'tempSup.5h': '5 ساعات',
+                'tempSup.24h': '24 ساعة',
+                'tempSup.7d': '7 أيام',
+                'tempSup.14d': '14 يوماً',
+                'tempSup.30d': '30 يوماً',
+                'tempSup.activeUntil': 'نشط حتى {date}',
+                'tempSup.expired': 'لا يوجد وصول مؤقت نشط',
+                'tempSup.usersOnly': 'يمكن منح صلاحية المشرف المؤقتة لحسابات دور المستخدم فقط.',
+                'tempSup.invalidDuration': 'يرجى اختيار مدة صالحة.',
+                'tempSup.granted': 'تم منح صلاحية المشرف المؤقتة حتى {date}.',
+                'tempSup.revoked': 'تم إلغاء صلاحية المشرف المؤقتة.',
+                'tempSup.revokeConfirm': 'إلغاء صلاحية المشرف المؤقتة لهذا المستخدم؟',
                 'ticket.number': 'رقم التذكرة',
                 'ticket.type': 'نوع التذكرة',
                 'ticket.status': 'حالة التذكرة',
@@ -1083,13 +1147,78 @@
             return r === role;
         }
 
+        const TEMP_SUPERVISOR_DURATIONS = {
+            '30m': 30 * 60 * 1000,
+            '1h': 60 * 60 * 1000,
+            '3h': 3 * 60 * 60 * 1000,
+            '5h': 5 * 60 * 60 * 1000,
+            '24h': 24 * 60 * 60 * 1000,
+            '7d': 7 * 24 * 60 * 60 * 1000,
+            '14d': 14 * 24 * 60 * 60 * 1000,
+            '30d': 30 * 24 * 60 * 60 * 1000
+        };
+
+        function isTempSupervisorActive(profile) {
+            if (!profile) return false;
+            const role = String(profile.role ?? profile.user_role ?? 'user').toLowerCase();
+            if (role !== 'user') return false;
+            const until = profile.temp_supervisor_until;
+            if (!until) return false;
+            return Date.parse(until) > Date.now();
+        }
+
         function canEditTickets() {
             const r = (activeProfile?.role || 'user').toLowerCase();
-            return r === 'admin' || r === 'supervisor';
+            if (r === 'admin' || r === 'supervisor') return true;
+            return isTempSupervisorActive(activeProfile);
+        }
+
+        function getRoleDisplayLabel() {
+            if (isTempSupervisorActive(activeProfile)) return t('tempSup.badge');
+            return (activeProfile?.role || 'user').toUpperCase();
+        }
+
+        function refreshAppPermissions() {
+            if (!activeProfile || !activeUser) return;
+            const canEdit = canEditTickets();
+            const updBtn = document.getElementById('admin-upd');
+            const delBtn = document.getElementById('admin-del');
+            if (updBtn) updBtn.style.display = canEdit ? 'inline-block' : 'none';
+            if (delBtn) delBtn.style.display = canEdit ? 'inline-block' : 'none';
+            const adminDashBtn = document.getElementById('admin-dash-btn');
+            if (adminDashBtn) adminDashBtn.style.display = canManageUsers() ? 'inline-block' : 'none';
+            const displayName = document.getElementById('display-name');
+            if (displayName) {
+                displayName.innerText = `${activeProfile.full_name || activeUser.email} (${getRoleDisplayLabel()})`;
+            }
         }
 
         function canManageUsers() {
             return hasRole('admin');
+        }
+
+        function buildTempSupervisorDurationOptions() {
+            const opts = [
+                ['30m', 'tempSup.30m'],
+                ['1h', 'tempSup.1h'],
+                ['3h', 'tempSup.3h'],
+                ['5h', 'tempSup.5h'],
+                ['24h', 'tempSup.24h'],
+                ['7d', 'tempSup.7d'],
+                ['14d', 'tempSup.14d'],
+                ['30d', 'tempSup.30d']
+            ];
+            return opts.map(([val, key]) =>
+                `<option value="${val}">${escapeHtml(t(key))}</option>`
+            ).join('');
+        }
+
+        function formatTempSupervisorStatus(untilIso) {
+            if (!untilIso) return '';
+            const exp = Date.parse(untilIso);
+            if (Number.isNaN(exp)) return '';
+            if (exp <= Date.now()) return t('tempSup.expired');
+            return t('tempSup.activeUntil', { date: formatDateTime(untilIso) });
         }
 
         async function initAuth() {
@@ -1374,7 +1503,7 @@
         }
 
         async function loadUsers() {
-            const { data, error } = await saudiaClient.from('profiles').select('id, full_name, email, role');
+            const { data, error } = await saudiaClient.from('profiles').select('id, full_name, email, role, temp_supervisor_until');
             if (error) {
                 console.error('Load users error:', error);
                 alert("Unable to load users. Check RLS policies for `profiles`.");
@@ -1382,11 +1511,30 @@
             }
             const body = document.getElementById('usersTableBody');
             body.innerHTML = '';
+            const durationOptions = buildTempSupervisorDurationOptions();
             
             (data || []).forEach(user => {
                 const row = body.insertRow();
                 const role = String(user.role ?? user.user_role ?? 'user').toLowerCase();
                 const roleSelId = `role_${user.id}`;
+                const tempSelId = `temp_sup_${user.id}`;
+                const isUser = role === 'user';
+                const tempActive = isUser && isTempSupervisorActive(user);
+                const tempStatus = isUser ? formatTempSupervisorStatus(user.temp_supervisor_until) : '—';
+                const tempStatusClass = tempActive ? 'temp-supervisor-status' : 'temp-supervisor-status expired';
+
+                let tempCell = '<td>—</td>';
+                if (isUser) {
+                    tempCell = `
+                    <td class="temp-supervisor-cell">
+                        <div class="temp-supervisor-controls">
+                            <select id="${escapeHtml(tempSelId)}">${durationOptions}</select>
+                            <button type="button" onclick="grantTempSupervisor('${user.id}', document.getElementById('${escapeHtml(tempSelId)}').value)" style="background:var(--islamic-green);">${escapeHtml(t('tempSup.grant'))}</button>
+                            ${tempActive ? `<button type="button" onclick="revokeTempSupervisor('${user.id}')" style="background:#777;">${escapeHtml(t('tempSup.revoke'))}</button>` : ''}
+                            <span class="${tempStatusClass}">${escapeHtml(tempStatus)}</span>
+                        </div>
+                    </td>`;
+                }
 
                 row.innerHTML = `
                     <td>${escapeHtml(user.full_name || '')}</td>
@@ -1398,6 +1546,7 @@
                             <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
                         </select>
                     </td>
+                    ${tempCell}
                     <td style="display:flex; gap:8px; flex-wrap:wrap;">
                         <button onclick="updateUserRole('${user.id}', document.getElementById('${escapeHtml(roleSelId)}').value)" style="background:#8E713E; padding:5px 10px; font-size:11px;">Save</button>
                         <button onclick="deleteUser('${user.id}')" style="background:#b22222; padding:5px 10px; font-size:11px;">Delete</button>
@@ -1406,14 +1555,84 @@
             });
         }
 
+        async function grantTempSupervisor(userId, durationKey) {
+            if (!canManageUsers()) return alert("Admin only.");
+
+            const ms = TEMP_SUPERVISOR_DURATIONS[durationKey];
+            if (!ms) return alert(t('tempSup.invalidDuration'));
+
+            const { data: profile, error: fetchError } = await saudiaClient
+                .from('profiles')
+                .select('id, role, temp_supervisor_until')
+                .eq('id', userId)
+                .single();
+
+            if (fetchError) {
+                console.error('grantTempSupervisor fetch:', fetchError);
+                return alert(fetchError.message);
+            }
+
+            const role = String(profile?.role ?? 'user').toLowerCase();
+            if (role !== 'user') return alert(t('tempSup.usersOnly'));
+
+            const now = Date.now();
+            const existing = profile?.temp_supervisor_until ? Date.parse(profile.temp_supervisor_until) : 0;
+            const base = existing > now ? existing : now;
+            const until = new Date(base + ms).toISOString();
+
+            const { error } = await saudiaClient
+                .from('profiles')
+                .update({ temp_supervisor_until: until })
+                .eq('id', userId);
+
+            if (error) {
+                console.error('grantTempSupervisor:', error);
+                return alert(error.message);
+            }
+
+            if (activeUser?.id === userId && activeProfile) {
+                activeProfile.temp_supervisor_until = until;
+                refreshAppPermissions();
+            }
+
+            alert(t('tempSup.granted', { date: formatDateTime(until) }));
+            loadUsers();
+        }
+
+        async function revokeTempSupervisor(userId) {
+            if (!canManageUsers()) return alert("Admin only.");
+            if (!confirm(t('tempSup.revokeConfirm'))) return;
+
+            const { error } = await saudiaClient
+                .from('profiles')
+                .update({ temp_supervisor_until: null })
+                .eq('id', userId);
+
+            if (error) {
+                console.error('revokeTempSupervisor:', error);
+                return alert(error.message);
+            }
+
+            if (activeUser?.id === userId && activeProfile) {
+                activeProfile.temp_supervisor_until = null;
+                refreshAppPermissions();
+            }
+
+            alert(t('tempSup.revoked'));
+            loadUsers();
+        }
+
         async function updateUserRole(userId, newRole) {
             if (!canManageUsers()) return alert("Admin only.");
             const role = String(newRole || '').trim().toLowerCase();
             if (!['user', 'supervisor', 'admin'].includes(role)) return alert("Invalid role.");
 
+            const updatePayload = { role };
+            if (role !== 'user') updatePayload.temp_supervisor_until = null;
+
             const { data, error } = await saudiaClient
                 .from('profiles')
-                .update({ role })
+                .update(updatePayload)
                 .eq('id', userId)
                 .select('id, role');
 
@@ -1622,19 +1841,7 @@
             document.getElementById('main-app').style.display = 'block';
             document.getElementById('admin-dashboard').style.display = 'none';
             document.getElementById('tickets-container').style.display = 'block';
-            const roleLabel = (activeProfile.role || 'user').toUpperCase();
-            document.getElementById('display-name').innerText = `${activeProfile.full_name || activeUser.email} (${roleLabel})`;
-
-            // Ticket permissions: Supervisor/Admin can update/delete
-            const updBtn = document.getElementById('admin-upd');
-            const delBtn = document.getElementById('admin-del');
-            const canEdit = canEditTickets();
-            if (updBtn) updBtn.style.display = canEdit ? 'inline-block' : 'none';
-            if (delBtn) delBtn.style.display = canEdit ? 'inline-block' : 'none';
-
-            // User management: Admin only
-            const adminDashBtn = document.getElementById('admin-dash-btn');
-            if (adminDashBtn) adminDashBtn.style.display = canManageUsers() ? 'inline-block' : 'none';
+            refreshAppPermissions();
             getTickets();
 
             // Start inactivity timers
