@@ -326,6 +326,34 @@
         .filter-actions .mini-btn { padding: 10px 12px; font-size: 11px; }
         .muted { color: var(--muted-text); font-size: 12px; }
 
+        .ticket-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            padding: 10px 0 4px;
+            font-family: ui-sans-serif, Arial, sans-serif;
+        }
+        .ticket-pagination .page-info {
+            font-size: 12px;
+            color: var(--muted-text);
+            min-width: 140px;
+            text-align: center;
+        }
+        .ticket-pagination button {
+            font-size: 11px;
+            padding: 6px 14px;
+            min-width: 88px;
+        }
+        .ticket-pagination button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+            filter: none;
+        }
+
         /* PREVIEW PANE */
         .preview-pane {
             display: none;
@@ -864,6 +892,11 @@
                     <tbody id="tableBody"></tbody>
                 </table>
             </div>
+            <div id="ticket-pagination" class="ticket-pagination" style="display:none;">
+                <button type="button" id="ticket-page-prev" class="mini-btn alt" onclick="changeTicketPage(-1)" data-i18n="pagination.prev">Previous</button>
+                <span id="ticket-page-info" class="page-info"></span>
+                <button type="button" id="ticket-page-next" class="mini-btn alt" onclick="changeTicketPage(1)" data-i18n="pagination.next">Next</button>
+            </div>
         </div>
 
         <!-- PREVIEW PANE -->
@@ -916,6 +949,8 @@
 
         let activeUser, activeProfile, ticketsList = [], selectedTicketId = null;
         let visibleTickets = [];
+        const TICKETS_PER_PAGE = 100;
+        let ticketPage = 1;
         var authMode = 'signin'; // 'signin' | 'signup'
         let currentLang = localStorage.getItem('tms_lang') || 'en';
         let ticketSaveInProgress = false;
@@ -1009,6 +1044,11 @@
                 'msg.saved': 'Ticket saved successfully!',
                 'msg.updated': 'Ticket updated successfully!',
                 'msg.showing': 'Showing {shown} of {total}',
+                'msg.showingPage': 'Showing {start}–{end} of {filtered} ({total} total) · Page {page} of {pages}',
+                'msg.showingNone': 'No tickets match your filters ({total} saved)',
+                'pagination.prev': 'Previous',
+                'pagination.next': 'Next',
+                'pagination.pageOf': 'Page {page} of {pages}',
                 'opt.Fresh Issue': 'Fresh Issue',
                 'opt.Re-issue': 'Re-issue',
                 'opt.Re-booked': 'Re-booked',
@@ -1107,6 +1147,11 @@
                 'msg.saved': 'تم حفظ التذكرة بنجاح!',
                 'msg.updated': 'تم تحديث التذكرة بنجاح!',
                 'msg.showing': 'عرض {shown} من {total}',
+                'msg.showingPage': 'عرض {start}–{end} من {filtered} ({total} إجمالي) · صفحة {page} من {pages}',
+                'msg.showingNone': 'لا توجد تذاكر مطابقة للفلاتر ({total} محفوظة)',
+                'pagination.prev': 'السابق',
+                'pagination.next': 'التالي',
+                'pagination.pageOf': 'صفحة {page} من {pages}',
                 'opt.Fresh Issue': 'إصدار جديد',
                 'opt.Re-issue': 'إعادة إصدار',
                 'opt.Re-booked': 'إعادة حجز',
@@ -1140,6 +1185,7 @@
             setAuthMode(authMode);
             applyUiPrefs();
             updateResultMeta();
+            updateTicketPagination();
         }
 
         function applyI18n() {
@@ -2127,8 +2173,62 @@
             const dir = sortDir === 'asc' ? 1 : -1;
             visibleTickets.sort((a, b) => dir * compareTickets(a, b, sortBy));
 
-            renderTable(visibleTickets);
+            ticketPage = 1;
+            renderTicketPage();
+        }
+
+        function getTicketPageCount() {
+            const n = (visibleTickets || []).length;
+            return Math.max(1, Math.ceil(n / TICKETS_PER_PAGE));
+        }
+
+        function clampTicketPage() {
+            const max = getTicketPageCount();
+            if (ticketPage > max) ticketPage = max;
+            if (ticketPage < 1) ticketPage = 1;
+        }
+
+        function getTicketPageSlice() {
+            const start = (ticketPage - 1) * TICKETS_PER_PAGE;
+            return visibleTickets.slice(start, start + TICKETS_PER_PAGE);
+        }
+
+        function renderTicketPage() {
+            clampTicketPage();
+            const selectAll = document.getElementById('selectAll');
+            if (selectAll) selectAll.checked = false;
+            renderTable(getTicketPageSlice());
             updateResultMeta();
+            updateTicketPagination();
+        }
+
+        function changeTicketPage(delta) {
+            goToTicketPage(ticketPage + delta);
+        }
+
+        function goToTicketPage(page) {
+            const max = getTicketPageCount();
+            ticketPage = Math.min(Math.max(1, page), max);
+            renderTicketPage();
+        }
+
+        function updateTicketPagination() {
+            const bar = document.getElementById('ticket-pagination');
+            const prev = document.getElementById('ticket-page-prev');
+            const next = document.getElementById('ticket-page-next');
+            const info = document.getElementById('ticket-page-info');
+            if (!bar || !prev || !next || !info) return;
+
+            const filtered = (visibleTickets || []).length;
+            const pages = getTicketPageCount();
+            const show = filtered > TICKETS_PER_PAGE;
+
+            bar.style.display = show ? 'flex' : 'none';
+            if (!show) return;
+
+            info.textContent = t('pagination.pageOf', { page: ticketPage, pages });
+            prev.disabled = ticketPage <= 1;
+            next.disabled = ticketPage >= pages;
         }
 
         function compareTickets(a, b, sortBy) {
@@ -2152,8 +2252,23 @@
             const el = document.getElementById('result-meta');
             if (!el) return;
             const total = (ticketsList || []).length;
-            const shown = (visibleTickets || []).length;
-            el.textContent = t('msg.showing', { shown, total });
+            const filtered = (visibleTickets || []).length;
+
+            if (filtered === 0) {
+                el.textContent = t('msg.showingNone', { total });
+                return;
+            }
+
+            const start = (ticketPage - 1) * TICKETS_PER_PAGE + 1;
+            const end = Math.min(ticketPage * TICKETS_PER_PAGE, filtered);
+            el.textContent = t('msg.showingPage', {
+                start,
+                end,
+                filtered,
+                total,
+                page: ticketPage,
+                pages: getTicketPageCount()
+            });
         }
 
         function resetFilters() {
