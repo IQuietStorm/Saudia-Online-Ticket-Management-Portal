@@ -345,7 +345,10 @@
         .ticket-pagination button {
             font-size: 11px;
             padding: 6px 14px;
-            min-width: 88px;
+            min-width: 72px;
+        }
+        .ticket-pagination button.page-edge-btn {
+            min-width: 56px;
         }
         .ticket-pagination button:disabled {
             opacity: 0.45;
@@ -893,9 +896,11 @@
                 </table>
             </div>
             <div id="ticket-pagination" class="ticket-pagination" style="display:none;">
+                <button type="button" id="ticket-page-first" class="mini-btn alt page-edge-btn" onclick="goToFirstTicketPage()" data-i18n="pagination.first">First</button>
                 <button type="button" id="ticket-page-prev" class="mini-btn alt" onclick="changeTicketPage(-1)" data-i18n="pagination.prev">Previous</button>
                 <span id="ticket-page-info" class="page-info"></span>
                 <button type="button" id="ticket-page-next" class="mini-btn alt" onclick="changeTicketPage(1)" data-i18n="pagination.next">Next</button>
+                <button type="button" id="ticket-page-last" class="mini-btn alt page-edge-btn" onclick="goToLastTicketPage()" data-i18n="pagination.last">Last</button>
             </div>
         </div>
 
@@ -949,6 +954,8 @@
 
         let activeUser, activeProfile, ticketsList = [], selectedTicketId = null;
         const TICKETS_PER_PAGE = 100;
+        /** Supabase/PostgREST max rows per request without .range() */
+        const SUPABASE_PAGE_SIZE = 1000;
         let ticketPage = 1;
         let ticketMatchCount = 0;
         let ticketSavedCount = 0;
@@ -1046,8 +1053,10 @@
                 'msg.updated': 'Ticket updated successfully!',
                 'msg.showingPage': 'Showing {start}–{end} of {filtered} ({total} saved) · Page {page} of {pages}',
                 'msg.showingNone': 'No tickets match your filters ({total} saved)',
+                'pagination.first': 'First',
                 'pagination.prev': 'Previous',
                 'pagination.next': 'Next',
+                'pagination.last': 'Last',
                 'pagination.pageOf': 'Page {page} of {pages}',
                 'opt.Fresh Issue': 'Fresh Issue',
                 'opt.Re-issue': 'Re-issue',
@@ -1148,8 +1157,10 @@
                 'msg.updated': 'تم تحديث التذكرة بنجاح!',
                 'msg.showingPage': 'عرض {start}–{end} من {filtered} ({total} محفوظة) · صفحة {page} من {pages}',
                 'msg.showingNone': 'لا توجد تذاكر مطابقة للفلاتر ({total} محفوظة)',
+                'pagination.first': 'الأولى',
                 'pagination.prev': 'السابق',
                 'pagination.next': 'التالي',
+                'pagination.last': 'الأخيرة',
                 'pagination.pageOf': 'صفحة {page} من {pages}',
                 'opt.Fresh Issue': 'إصدار جديد',
                 'opt.Re-issue': 'إعادة إصدار',
@@ -2148,6 +2159,22 @@
             return query;
         }
 
+        /** Walk Supabase result sets in chunks (default max 1000 rows per request). */
+        async function fetchAllPaginated(buildQuery, pageSize = SUPABASE_PAGE_SIZE) {
+            const rows = [];
+            let from = 0;
+            while (true) {
+                const to = from + pageSize - 1;
+                const { data, error } = await buildQuery().range(from, to);
+                if (error) throw error;
+                const batch = data || [];
+                rows.push(...batch);
+                if (batch.length < pageSize) break;
+                from += pageSize;
+            }
+            return rows;
+        }
+
         async function fetchSavedTicketCount() {
             const { count, error } = await saudiaClient
                 .from('tickets')
@@ -2199,13 +2226,17 @@
             if (!staffSel) return;
 
             const current = staffSel.value || '';
-            const { data, error } = await saudiaClient.from('tickets').select('processed_by');
-            if (error) {
+            let rows;
+            try {
+                rows = await fetchAllPaginated(() =>
+                    saudiaClient.from('tickets').select('processed_by').order('id')
+                );
+            } catch (error) {
                 console.warn('Staff filter load failed:', error);
                 return;
             }
 
-            const unique = Array.from(new Set((data || []).map(r => (r.processed_by || '').trim()).filter(Boolean)))
+            const unique = Array.from(new Set(rows.map(r => (r.processed_by || '').trim()).filter(Boolean)))
                 .sort((a, b) => a.localeCompare(b));
 
             staffSel.innerHTML = `<option value="">All</option>` + unique.map(name =>
@@ -2229,16 +2260,30 @@
             if (ticketPage < 1) ticketPage = 1;
         }
 
-        async function changeTicketPage(delta) {
+        async function goToTicketPage(pageNum) {
             const max = getTicketPageCount();
-            ticketPage = Math.min(Math.max(1, ticketPage + delta), max);
+            ticketPage = Math.min(Math.max(1, pageNum), max);
             await fetchTicketsPage();
+        }
+
+        async function changeTicketPage(delta) {
+            await goToTicketPage(ticketPage + delta);
+        }
+
+        async function goToFirstTicketPage() {
+            await goToTicketPage(1);
+        }
+
+        async function goToLastTicketPage() {
+            await goToTicketPage(getTicketPageCount());
         }
 
         function updateTicketPagination() {
             const bar = document.getElementById('ticket-pagination');
+            const first = document.getElementById('ticket-page-first');
             const prev = document.getElementById('ticket-page-prev');
             const next = document.getElementById('ticket-page-next');
+            const last = document.getElementById('ticket-page-last');
             const info = document.getElementById('ticket-page-info');
             if (!bar || !prev || !next || !info) return;
 
@@ -2249,8 +2294,12 @@
             if (!show) return;
 
             info.textContent = t('pagination.pageOf', { page: ticketPage, pages });
-            prev.disabled = ticketPage <= 1;
-            next.disabled = ticketPage >= pages;
+            const onFirst = ticketPage <= 1;
+            const onLast = ticketPage >= pages;
+            if (first) first.disabled = onFirst;
+            prev.disabled = onFirst;
+            next.disabled = onLast;
+            if (last) last.disabled = onLast;
         }
 
         function updateResultMeta() {
@@ -2990,11 +3039,13 @@
             applyFiltersAndSort();
         }
 
-        function exportSelectedToCSV() {
+        async function exportSelectedToCSV() {
             const ids = Array.from(document.querySelectorAll('.export-check:checked')).map(cb => cb.getAttribute('data-id'));
             if (!ids.length) return alert("Select tickets first.");
-            
-            const toExport = ticketsList.filter(t => ids.includes(String(t.id)));
+
+            const { data, error } = await saudiaClient.from('tickets').select('*').in('id', ids);
+            if (error) return alert('Export failed: ' + error.message);
+            const toExport = data || [];
             let csv = "Ticket #,Type,Status,Date,Issue Period From,Issue Period To,Issuer,Previous Ticket #,Ticket Value,Tax,EMD Reason,Type Reason,Comment,Entered,Staff\n";
             
             toExport.forEach(t => {
