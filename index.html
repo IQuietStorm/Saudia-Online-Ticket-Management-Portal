@@ -948,9 +948,10 @@
         });
 
         let activeUser, activeProfile, ticketsList = [], selectedTicketId = null;
-        let visibleTickets = [];
         const TICKETS_PER_PAGE = 100;
         let ticketPage = 1;
+        let ticketMatchCount = 0;
+        let ticketSavedCount = 0;
         var authMode = 'signin'; // 'signin' | 'signup'
         let currentLang = localStorage.getItem('tms_lang') || 'en';
         let ticketSaveInProgress = false;
@@ -1043,8 +1044,7 @@
                 'msg.ticket13': 'Ticket Number must be exactly 13 digits.',
                 'msg.saved': 'Ticket saved successfully!',
                 'msg.updated': 'Ticket updated successfully!',
-                'msg.showing': 'Showing {shown} of {total}',
-                'msg.showingPage': 'Showing {start}–{end} of {filtered} ({total} total) · Page {page} of {pages}',
+                'msg.showingPage': 'Showing {start}–{end} of {filtered} ({total} saved) · Page {page} of {pages}',
                 'msg.showingNone': 'No tickets match your filters ({total} saved)',
                 'pagination.prev': 'Previous',
                 'pagination.next': 'Next',
@@ -1146,8 +1146,7 @@
                 'msg.ticket13': 'يجب أن يكون رقم التذكرة 13 رقماً بالضبط.',
                 'msg.saved': 'تم حفظ التذكرة بنجاح!',
                 'msg.updated': 'تم تحديث التذكرة بنجاح!',
-                'msg.showing': 'عرض {shown} من {total}',
-                'msg.showingPage': 'عرض {start}–{end} من {filtered} ({total} إجمالي) · صفحة {page} من {pages}',
+                'msg.showingPage': 'عرض {start}–{end} من {filtered} ({total} محفوظة) · صفحة {page} من {pages}',
                 'msg.showingNone': 'لا توجد تذاكر مطابقة للفلاتر ({total} محفوظة)',
                 'pagination.prev': 'السابق',
                 'pagination.next': 'التالي',
@@ -2125,61 +2124,103 @@
             document.getElementById('refunded-only-box').style.display = (!minimal && status === "Refund" && refundStatus === "Approved and paid") ? "block" : "none";
         }
 
-        async function getTickets() {
-            const { data } = await saudiaClient.from('tickets').select('*').order('created_at', { ascending: false });
+        function getTicketFilterParams() {
+            return {
+                q: (document.getElementById('search')?.value || '').trim(),
+                fStatus: document.getElementById('filterStatus')?.value || '',
+                fType: document.getElementById('filterType')?.value || '',
+                fStaff: document.getElementById('filterStaff')?.value || '',
+                dateFrom: document.getElementById('filterDateFrom')?.value || '',
+                dateTo: document.getElementById('filterDateTo')?.value || '',
+                sortBy: document.getElementById('sortBy')?.value || 'created_at',
+                sortDir: document.getElementById('sortDir')?.value || 'desc'
+            };
+        }
+
+        function applyTicketFiltersToQuery(query, params) {
+            const { q, fStatus, fType, fStaff, dateFrom, dateTo } = params;
+            if (q) query = query.ilike('ticket_num', `%${q}%`);
+            if (fStatus) query = query.eq('status', fStatus);
+            if (fType) query = query.eq('type', fType);
+            if (fStaff) query = query.eq('processed_by', fStaff);
+            if (dateFrom) query = query.gte('issue_date', dateFrom);
+            if (dateTo) query = query.lte('issue_date', dateTo);
+            return query;
+        }
+
+        async function fetchSavedTicketCount() {
+            const { count, error } = await saudiaClient
+                .from('tickets')
+                .select('*', { count: 'exact', head: true });
+            if (!error) ticketSavedCount = count ?? 0;
+        }
+
+        async function fetchTicketsPage() {
+            const params = getTicketFilterParams();
+            const ascending = params.sortDir === 'asc';
+            const allowedSort = ['created_at', 'issue_date', 'status', 'type', 'processed_by'];
+            const sortCol = allowedSort.includes(params.sortBy) ? params.sortBy : 'created_at';
+
+            clampTicketPage();
+            const from = (ticketPage - 1) * TICKETS_PER_PAGE;
+            const to = from + TICKETS_PER_PAGE - 1;
+
+            let query = saudiaClient.from('tickets').select('*', { count: 'exact' });
+            query = applyTicketFiltersToQuery(query, params);
+            query = query.order(sortCol, { ascending }).range(from, to);
+
+            const { data, count, error } = await query;
+            if (error) {
+                console.error('fetchTicketsPage:', error);
+                alert('Unable to load tickets: ' + error.message);
+                return;
+            }
+
             ticketsList = data || [];
-            populateStaffFilterOptions();
-            applyFiltersAndSort();
+            ticketMatchCount = count ?? ticketsList.length;
+
+            const selectAll = document.getElementById('selectAll');
+            if (selectAll) selectAll.checked = false;
+            renderTable(ticketsList);
+            updateResultMeta();
+            updateTicketPagination();
+        }
+
+        async function getTickets() {
+            await fetchSavedTicketCount();
+            await populateStaffFilterOptions();
+            ticketPage = 1;
+            await fetchTicketsPage();
             validateTicketNumberUniqueness();
         }
 
-        function populateStaffFilterOptions() {
+        async function populateStaffFilterOptions() {
             const staffSel = document.getElementById('filterStaff');
             if (!staffSel) return;
 
-            const current = staffSel.value || "";
-            const unique = Array.from(new Set((ticketsList || []).map(t => (t.processed_by || '').trim()).filter(Boolean)))
+            const current = staffSel.value || '';
+            const { data, error } = await saudiaClient.from('tickets').select('processed_by');
+            if (error) {
+                console.warn('Staff filter load failed:', error);
+                return;
+            }
+
+            const unique = Array.from(new Set((data || []).map(r => (r.processed_by || '').trim()).filter(Boolean)))
                 .sort((a, b) => a.localeCompare(b));
 
-            staffSel.innerHTML = `<option value="">All</option>` + unique.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
-            staffSel.value = unique.includes(current) ? current : "";
+            staffSel.innerHTML = `<option value="">All</option>` + unique.map(name =>
+                `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
+            ).join('');
+            staffSel.value = unique.includes(current) ? current : '';
         }
 
-        function applyFiltersAndSort() {
-            const q = (document.getElementById('search')?.value || '').trim().toLowerCase();
-            const fStatus = document.getElementById('filterStatus')?.value || '';
-            const fType = document.getElementById('filterType')?.value || '';
-            const fStaff = document.getElementById('filterStaff')?.value || '';
-            const dateFrom = document.getElementById('filterDateFrom')?.value || '';
-            const dateTo = document.getElementById('filterDateTo')?.value || '';
-            const sortBy = document.getElementById('sortBy')?.value || 'created_at';
-            const sortDir = document.getElementById('sortDir')?.value || 'desc';
-
-            const fromTs = dateFrom ? Date.parse(dateFrom + 'T00:00:00') : null;
-            const toTs = dateTo ? Date.parse(dateTo + 'T23:59:59') : null;
-
-            visibleTickets = (ticketsList || []).filter(t => {
-                if (q && !(String(t.ticket_num || '').toLowerCase().includes(q))) return false;
-                if (fStatus && t.status !== fStatus) return false;
-                if (fType && t.type !== fType) return false;
-                if (fStaff && (t.processed_by || '') !== fStaff) return false;
-
-                const issue = t.issue_date ? Date.parse(t.issue_date + 'T00:00:00') : null;
-                if (fromTs && (!issue || issue < fromTs)) return false;
-                if (toTs && (!issue || issue > toTs)) return false;
-                return true;
-            });
-
-            const dir = sortDir === 'asc' ? 1 : -1;
-            visibleTickets.sort((a, b) => dir * compareTickets(a, b, sortBy));
-
+        async function applyFiltersAndSort() {
             ticketPage = 1;
-            renderTicketPage();
+            await fetchTicketsPage();
         }
 
         function getTicketPageCount() {
-            const n = (visibleTickets || []).length;
-            return Math.max(1, Math.ceil(n / TICKETS_PER_PAGE));
+            return Math.max(1, Math.ceil(ticketMatchCount / TICKETS_PER_PAGE));
         }
 
         function clampTicketPage() {
@@ -2188,28 +2229,10 @@
             if (ticketPage < 1) ticketPage = 1;
         }
 
-        function getTicketPageSlice() {
-            const start = (ticketPage - 1) * TICKETS_PER_PAGE;
-            return visibleTickets.slice(start, start + TICKETS_PER_PAGE);
-        }
-
-        function renderTicketPage() {
-            clampTicketPage();
-            const selectAll = document.getElementById('selectAll');
-            if (selectAll) selectAll.checked = false;
-            renderTable(getTicketPageSlice());
-            updateResultMeta();
-            updateTicketPagination();
-        }
-
-        function changeTicketPage(delta) {
-            goToTicketPage(ticketPage + delta);
-        }
-
-        function goToTicketPage(page) {
+        async function changeTicketPage(delta) {
             const max = getTicketPageCount();
-            ticketPage = Math.min(Math.max(1, page), max);
-            renderTicketPage();
+            ticketPage = Math.min(Math.max(1, ticketPage + delta), max);
+            await fetchTicketsPage();
         }
 
         function updateTicketPagination() {
@@ -2219,9 +2242,8 @@
             const info = document.getElementById('ticket-page-info');
             if (!bar || !prev || !next || !info) return;
 
-            const filtered = (visibleTickets || []).length;
             const pages = getTicketPageCount();
-            const show = filtered > TICKETS_PER_PAGE;
+            const show = ticketMatchCount > TICKETS_PER_PAGE;
 
             bar.style.display = show ? 'flex' : 'none';
             if (!show) return;
@@ -2231,28 +2253,11 @@
             next.disabled = ticketPage >= pages;
         }
 
-        function compareTickets(a, b, sortBy) {
-            if (sortBy === 'issue_date') {
-                const ad = a.issue_date ? Date.parse(a.issue_date + 'T00:00:00') : 0;
-                const bd = b.issue_date ? Date.parse(b.issue_date + 'T00:00:00') : 0;
-                return ad - bd;
-            }
-            if (sortBy === 'created_at') {
-                const ad = a.created_at ? Date.parse(a.created_at) : 0;
-                const bd = b.created_at ? Date.parse(b.created_at) : 0;
-                return ad - bd;
-            }
-            if (sortBy === 'status') return String(a.status || '').localeCompare(String(b.status || ''));
-            if (sortBy === 'type') return String(a.type || '').localeCompare(String(b.type || ''));
-            if (sortBy === 'processed_by') return String(a.processed_by || '').localeCompare(String(b.processed_by || ''));
-            return 0;
-        }
-
         function updateResultMeta() {
             const el = document.getElementById('result-meta');
             if (!el) return;
-            const total = (ticketsList || []).length;
-            const filtered = (visibleTickets || []).length;
+            const total = ticketSavedCount;
+            const filtered = ticketMatchCount;
 
             if (filtered === 0) {
                 el.textContent = t('msg.showingNone', { total });
@@ -2982,8 +2987,7 @@
         }
 
         function filterTable() {
-            const s = document.getElementById('search').value.toLowerCase();
-            renderTable(ticketsList.filter(x => x.ticket_num.includes(s)));
+            applyFiltersAndSort();
         }
 
         function exportSelectedToCSV() {
